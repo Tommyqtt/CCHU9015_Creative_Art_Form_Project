@@ -26,6 +26,20 @@ import { recordVisit } from './state.js';
 import { mountSceneView } from './ui/sceneView.js';
 import { mountEndingView } from './ui/endingView.js';
 
+/**
+ * Default typewriter speed in milliseconds per character.
+ *
+ * `.cursorrules` §Dialogue specifies ~30ms/char as the target cadence,
+ * but operator feedback during Slice B judged that too slow for the
+ * roughly 300-char lines in S4/S7. 15ms reads as typewriter-paced
+ * without forcing the reader to wait; skip-on-click is still the
+ * primary accessibility path for slower readers.
+ *
+ * Tune here, not at call sites — sceneView / endingView let the
+ * default through so a single edit changes the whole piece.
+ */
+const DEFAULT_TYPE_SPEED_MS = 15;
+
 /** @type {HTMLElement|null} */
 let rootEl = null;
 /** @type {{unmount: () => void}|null} */
@@ -145,10 +159,10 @@ export function returnToTitle() {
  *
  * @param {HTMLElement} el
  * @param {string}      text
- * @param {number}      [speed=30]
+ * @param {number}      [speed=DEFAULT_TYPE_SPEED_MS]
  * @returns {Promise<void> & {skip: () => void}}
  */
-export function typewriter(el, text, speed = 30) {
+export function typewriter(el, text, speed = DEFAULT_TYPE_SPEED_MS) {
   const safe = typeof text === 'string' ? text : String(text ?? '');
 
   /** Returns the resolved-promise shape with an attached no-op skip. */
