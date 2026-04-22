@@ -1,0 +1,149 @@
+# .cursorrules — Project "Subscribed"
+
+## Project context
+You are assisting on **"Subscribed"**, a web-based 2D pixel-art interactive
+narrative game built as coursework for HKU **CCHU9015 — Sex and Intimacy in
+Modern Times**. The piece is a Creative Art Form Presentation that dramatises
+**parasocial relationships, digital intimacy, and the transactional nature of
+modern online connection**. It is played once through in class, so polish and
+atmosphere matter more than replayability.
+
+The story is authored in `docs/` (see `story line tree diagram.png` and
+`script.pptx`) and branches through scenes **S1–S9** with endings **E1–E7**.
+
+## Tech stack (non-negotiable — keep it simple, zero build step)
+- Pure **HTML5 + CSS3 + vanilla JavaScript (ES6 modules)**.
+- **No frameworks** (no React, Vue, Svelte), **no bundlers** (no Vite, Webpack,
+  esbuild), **no TypeScript**, **no CSS preprocessors**.
+- Must run two ways:
+  1. Opening `index.html` directly in the browser (file://), and
+  2. `npx serve` from the project root.
+- Targets: latest Chrome, Safari, Firefox. Desktop-first, but the layout must
+  stay usable down to ~375px width.
+- Only external dependency allowed: **Google Fonts ("Press Start 2P")** via
+  `<link>`. No npm packages, no CDN libraries, no analytics, no trackers, no
+  external APIs.
+
+## File layout
+```
+/index.html
+/src/
+  main.js         // entry point, wires DOM to engine
+  engine.js       // scene state machine, choice handling, typewriter
+  story.js        // ALL narrative data lives here — single source of truth
+  ui.js           // DOM rendering helpers, no story strings
+/styles/
+  main.css        // pixel-art theme, palette, layout
+/assets/
+  bg/             // backgrounds
+  chars/          // character sprites + poses
+  sfx/            // optional audio
+```
+Do not introduce new top-level folders without asking first.
+
+## Story data contract (strict)
+All narrative content lives in **`/src/story.js`** as a single exported object
+keyed by scene ID. **Never hardcode dialogue, choice labels, or scene strings
+in render logic.** Scene shape:
+
+```js
+{
+  id: "S1",
+  title: "The First Subscribe",
+  background: "assets/bg/bedroom_night.png",
+  character: "assets/chars/mira.png",   // or null
+  characterPose: "idle",                // idle | happy | sad | glitch | ...
+  dialogue: [
+    { speaker: "Mira", text: "Hey you. Thanks for subscribing." },
+    { speaker: "You",  text: "..." }
+  ],
+  choices: [
+    { label: "Tip $5",      next: "S2" },
+    { label: "Just watch",  next: "S3" },
+    { label: "Close app",   next: "E1" }
+  ]
+}
+```
+Endings `E1`–`E7` use the same shape with `choices: []` and an `ending: true`
+flag plus a short `epilogue` string shown after the final dialogue.
+
+## Rendering rules
+- **Data-attribute driven.** Render from the scene object; never from string
+  literals. E.g. `<button data-next="S2">`.
+- Scene transitions go through one function (e.g. `goToScene(id)`) that
+  validates the id exists in `story.js` and logs a warning if not.
+- Keep functions **small and pure** where practical. Side-effectful DOM code
+  lives in `ui.js`; story flow lives in `engine.js`.
+- **JSDoc every non-obvious function** — purpose, params, returns. Skip JSDoc
+  on trivial one-liners.
+- No comments that narrate the obvious (`// loop over choices`). Only explain
+  intent, trade-offs, or constraints.
+
+## Visual style (16-bit pixel-art coherent)
+- `image-rendering: pixelated` on every `<img>` and canvas.
+- `font-family: "Press Start 2P", monospace;` everywhere.
+- **Palette (use CSS custom properties, no ad-hoc hex):**
+  - `--navy: #0f1020;`       /* deep background */
+  - `--cyan: #6ee7ff;`       /* phone-glow, primary UI */
+  - `--pink: #ff6fb5;`       /* creator / romance accent */
+  - `--amber: #ffb347;`      /* warning / money */
+  - `--ghost: #7a7f9a;`      /* muted text, disabled */
+- **No gradients. No blurry shadows.** Depth is conveyed only by hard-edged
+  pixel offsets (e.g. `box-shadow: 4px 4px 0 var(--ghost);`).
+- Borders are crunchy: solid, 2–4px, no `border-radius` above 0.
+- Buttons have a pressed state that shifts 2px down/right and loses its
+  bottom-right shadow.
+
+## Dialogue / typewriter
+- All dialogue renders with a **typewriter effect at ~30ms per character**.
+- Clicking (or pressing Enter/Space) while text is typing **completes the
+  current line instantly**; a second press advances to the next line.
+- Respect `@media (prefers-reduced-motion: reduce)` — print full lines
+  immediately, no per-character animation.
+
+## Accessibility
+- Fully keyboard navigable: **1 / 2 / 3** pick the corresponding choice,
+  **Enter / Space** advances dialogue, **Esc** opens a pause/menu overlay.
+- Visible focus ring on all interactive elements (cyan, hard-edged).
+- Every `<img>` has meaningful `alt` text; decorative-only images use
+  `alt=""` and `aria-hidden="true"`.
+- Colour is never the sole signal — pair with text or shape.
+- Contrast meets WCAG AA against `--navy`.
+
+## Code rules
+- ES modules (`<script type="module">`), `import` / `export` only. No
+  `require`, no IIFE globals. The only global should be a debug hook under
+  `window.__subscribed` guarded by a `DEBUG` flag.
+- Strict equality (`===`), `const` by default, `let` only when reassigning,
+  never `var`.
+- Prefer `for...of` and array methods over index loops.
+- No `innerHTML` with user-derived strings. Use `textContent` for dialogue;
+  template nodes (`<template>`) for structural HTML.
+- No inline event handlers in HTML. Wire listeners in JS.
+- Filenames: `kebab-case.js` / `kebab-case.css`. Function and variable names:
+  `camelCase`. Scene IDs: `S1`, `E1` (uppercase, as in `story.js`).
+
+## Out of scope — do not add
+- Build tooling, TypeScript, linters-as-dependencies, package.json scripts
+  beyond a possible `"start": "npx serve"`.
+- Networked features, save-to-cloud, leaderboards, auth.
+- Heavy audio/video; tiny optional `.wav`/`.ogg` SFX are fine.
+- Anything that breaks the `file://` open-and-play use case.
+
+## How to respond to feature requests
+1. **Explain WHY first** — one short paragraph tying the change to the theme
+   (parasocial intimacy, transactional connection) and/or to the tech/style
+   rules above.
+2. **Then show the code.** When touching a file, output the **full file**
+   after changes (not a diff), so it can be copy-pasted directly.
+3. If a change would **create more than one new file**, list the filenames
+   and a one-line purpose for each, then **stop and wait for confirmation**
+   before generating contents.
+4. Prefer editing existing files over creating new ones.
+5. After edits, note any follow-ups (assets to draw, strings to proofread)
+   as a short checklist.
+
+## When unsure
+Ask one focused clarifying question rather than guessing — especially around
+narrative branching (which scene leads where) and tone (the piece is
+melancholic and critical, not preachy).
