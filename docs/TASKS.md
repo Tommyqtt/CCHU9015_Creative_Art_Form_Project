@@ -42,19 +42,19 @@
 
 ## SLICE C — Visual polish and theme beats
 
-- **status:** TODO
-- **depends on:** Slice B
-- **files touched (planned):** `styles/scene.css`, `styles/main.css`, possibly `src/ui/sceneView.js`
+- **status:** DONE (2026-04-23)
+- **commit:** see `docs/INTEGRATION_LOG.md` (third entry)
+- **files touched:** `src/engine.js`, `src/ui/sceneView.js`, `src/ui/endingView.js`, `src/ui/pauseOverlay.js` **(new)**, `styles/scene.css`, `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
 
-**Goal.** The scene reads as pixel-art and not as a wireframe. Caret blink on dialogue. Choice buttons have the pressed state from `.cursorrules`. S4's "glitch at final line" beat fires via `.scene[data-scene-id="S4"].is-final-line .scene__char` per `docs/story_spec.md` §S4 atmosphere. Palette leans apply per scene (S3 `--pink`, S5 `--ghost`, S7 `--amber`).
+**Goal.** The scene reads as pixel-art and not as a wireframe. Caret blink on dialogue. Choice buttons have the pressed state from `.cursorrules`. S4's "glitch at final line" beat fires via `.scene[data-scene-id="S4"].is-final-line .scene__char` per `docs/story_spec.md` §S4 atmosphere. Palette leans apply per scene (S3 `--pink`, S5 `--ghost`, S7 `--amber`, S9 `--ghost`).
 
-**Acceptance (planned).**
-- [ ] Caret blink animation (paused under `prefers-reduced-motion`).
-- [ ] Choice buttons gain a pressed 2px-down/right translate on `:active`.
-- [ ] S4 sprite flicker fires once on entering the last dialogue line; no flicker on other scenes.
-- [ ] Palette leans verified visually at S3, S4, S5, S7, S9.
-- [ ] No ad-hoc hex values anywhere — palette tokens only.
-- [ ] Pause overlay (Esc) shipped with a dismissible themed panel.
+**Acceptance (all met).**
+- [x] Caret blink animation (paused under `prefers-reduced-motion`). View toggles `.is-typing` on the text element at line start and removes it on advance / choice reveal / ending finish.
+- [x] Choice buttons gain a pressed 2px-down/right translate on `:active` (inherited from `.btn:active` in `main.css`) plus a pink border-lean on `.scene__choice:active` so the press reads on long labels.
+- [x] S4 sprite flicker fires via `.scene[data-scene-id="S4"].is-final-line .scene__char`. The view toggles `is-final-line` when starting the last dialogue line; no flicker on other scenes.
+- [x] Palette leans verified: S3 pink, S4 pink→amber on final line, S5 ghost + sprite 60% opacity, S7 amber, S9 ghost (targets `.ending` because S9's type is `ending`).
+- [x] No ad-hoc hex values added — only `rgba(var(--navy)-equivalent, alpha)` for the pause backdrop, matching the existing `.scene__dialogue` pattern.
+- [x] Pause overlay (Esc) shipped. Engine installs a document-level Esc handler in `initEngine`; Esc toggles a themed panel with **Resume** + **Return to title**. Scene and ending views skip their own keyboard/click handlers while the overlay is up (queried via `document.querySelector('.pause-overlay')`).
 
 Note: Slice C used to be titled "wire engine, scene renderer, typewriter, keybindings" — all of that landed in Slice B, so the former Slice C contents are now closed. Slice C in this document is the *new* Slice C (visual polish + pause).
 

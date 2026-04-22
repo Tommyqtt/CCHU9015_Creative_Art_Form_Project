@@ -25,6 +25,7 @@ import { STORY } from './story.js';
 import { recordVisit } from './state.js';
 import { mountSceneView } from './ui/sceneView.js';
 import { mountEndingView } from './ui/endingView.js';
+import { mountPauseOverlay } from './ui/pauseOverlay.js';
 
 /**
  * Default typewriter speed in milliseconds per character.
@@ -46,6 +47,10 @@ let rootEl = null;
 let currentScreen = null;
 /** @type {(() => void)|null} */
 let onReturnToTitleHook = null;
+/** @type {{unmount: () => void}|null} */
+let pauseHandle = null;
+/** Prevents double-install of the document-level Esc listener. */
+let escInstalled = false;
 
 /**
  * Register the engine with its DOM root and any host-level callbacks.
@@ -61,6 +66,60 @@ export function initEngine(el, hooks = {}) {
   onReturnToTitleHook = typeof hooks.onReturnToTitle === 'function'
     ? hooks.onReturnToTitle
     : null;
+  installEscListener();
+}
+
+/**
+ * Install the document-level Esc handler that toggles the pause
+ * overlay. Guarded against double-install so repeated `initEngine`
+ * calls don't stack listeners. The handler is a no-op when no
+ * scene/ending is mounted, so the title screen keeps Esc free.
+ * @returns {void}
+ */
+function installEscListener() {
+  if (escInstalled) return;
+  escInstalled = true;
+  document.addEventListener('keydown', onEscKeydown);
+}
+
+/**
+ * Toggle the pause overlay on Esc. Open when a scene/ending is up
+ * and no overlay is open; close when the overlay is open. Ignored
+ * while the title screen is mounted (currentScreen === null).
+ * @param {KeyboardEvent} ev
+ * @returns {void}
+ */
+function onEscKeydown(ev) {
+  if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+  if (ev.defaultPrevented) return;
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (pauseHandle) {
+    ev.preventDefault();
+    closePause();
+    return;
+  }
+  if (!currentScreen) return;
+  ev.preventDefault();
+  openPause();
+}
+
+/** Open the pause overlay. No-op if one is already open. */
+function openPause() {
+  if (pauseHandle) return;
+  pauseHandle = mountPauseOverlay(document.body, {
+    onResume: closePause,
+    onReturnToTitle: () => {
+      closePause();
+      returnToTitle();
+    },
+  });
+}
+
+/** Close the pause overlay. Safe to call when none is open. */
+function closePause() {
+  if (!pauseHandle) return;
+  pauseHandle.unmount();
+  pauseHandle = null;
 }
 
 /**
@@ -85,6 +144,10 @@ export function renderScene(id) {
     console.error(`[engine] renderScene: unknown scene id "${id}"`);
     return;
   }
+
+  // Any open pause overlay is stale the moment we switch scenes
+  // (e.g. dev jumper mid-pause); close it before rendering.
+  closePause();
 
   if (currentScreen && typeof currentScreen.unmount === 'function') {
     currentScreen.unmount();
@@ -129,6 +192,7 @@ export function handleChoice(choice) {
  * @returns {void}
  */
 export function returnToTitle() {
+  closePause();
   if (currentScreen && typeof currentScreen.unmount === 'function') {
     currentScreen.unmount();
   }

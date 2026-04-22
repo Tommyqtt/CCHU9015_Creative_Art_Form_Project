@@ -1,8 +1,15 @@
 /* styles/scene.css — layout for the title screen, the scene view,
-   the ending view, and the developer scene-jumper panel.
+   the ending view, the developer scene-jumper panel, and (Slice C)
+   the pause overlay + per-scene atmosphere beats.
 
-   Slice B brings up the functional, legible styling. Polish beats
-   (caret blink, S4 glitch, palette leans per scene) land in Slice D. */
+   Slice C polish (below the scene/ending rules):
+     - Caret blink on the active dialogue line (`.is-typing`).
+     - Pressed state for `.btn` inherits into `.scene__choice`;
+       scene choices also get a pink border-lean on :active so the
+       press reads on long labels where the transform is subtle.
+     - S4 glitch keyed off `[data-scene-id="S4"].is-final-line
+       .scene__char` per docs/story_spec.md §S4 atmosphere.
+     - Per-scene palette leans for S3 / S4 / S5 / S7 / S9. */
 
 /* ===================================================================== */
 /* Title screen                                                          */
@@ -366,8 +373,220 @@
   .dev-jumper      { font-size: 8px; right: calc(var(--px) * 2); bottom: calc(var(--px) * 2); }
 }
 
-/* Reduced-motion: the typewriter respects this at the JS layer already;
-   here we also strip the (future) caret blink and any transitions. */
+/* ===================================================================== */
+/* Caret blink on the active dialogue / narration line                   */
+/* ===================================================================== */
+
+/* A pixel-style block caret. `content: ""` + `display: inline-block` +
+   a solid fill draws a crisp block; no blurry shadows. Only visible
+   while the owning line has `.is-typing` (added by the view at line
+   start, removed on advance / choice reveal / ending finish). */
+.scene__text::after,
+.ending__text::after {
+  content: "";
+  display: inline-block;
+  width: calc(var(--px) * 2);
+  height: 1em;
+  margin-left: calc(var(--px));
+  vertical-align: text-bottom;
+  background: var(--cyan);
+  opacity: 0;
+}
+
+.scene__text.is-typing::after,
+.ending__text.is-typing::after {
+  opacity: 1;
+  animation: caret-blink 900ms steps(2, end) infinite;
+}
+
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+
+/* ===================================================================== */
+/* Choice button pressed-state polish                                    */
+/* ===================================================================== */
+
+/* The base `.btn:active` already does the 2px translate + shadow drop
+   (see styles/main.css). On long choice labels the translate alone can
+   read as noise, so add a pink border lean on press. Hover stays cyan
+   to avoid out-shouting the speaker palette in the dialogue box. */
+.scene__choice:active,
+.scene__choice.is-pressed {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.scene__choice:active .scene__choice-num,
+.scene__choice.is-pressed .scene__choice-num {
+  color: var(--pink);
+}
+
+/* ===================================================================== */
+/* S4 glitch beat                                                        */
+/* ===================================================================== */
+
+/* Spec: "A slight glitch frame on Mira's portrait when the 8-second
+   reply lands." The view adds `.is-final-line` to the scene root on
+   the last dialogue line start; this rule runs a short RGB-offset
+   flicker on Mira's sprite. Hard-edged drop-shadows (0 blur) keep the
+   pixel-art feel per .cursorrules. */
+.scene[data-scene-id="S4"].is-final-line .scene__char {
+  animation: s4-glitch 120ms steps(4, end) 3;
+}
+
+@keyframes s4-glitch {
+  0%   { transform: translate(0, 0);                 filter: none; }
+  25%  { transform: translate(calc(var(--px) * -0.5), calc(var(--px) * 0.25));
+         filter: drop-shadow(var(--px) 0 0 var(--pink)) drop-shadow(calc(var(--px) * -1) 0 0 var(--cyan)); }
+  50%  { transform: translate(calc(var(--px) * 0.5),  calc(var(--px) * -0.25));
+         filter: drop-shadow(calc(var(--px) * -1) 0 0 var(--pink)) drop-shadow(var(--px) 0 0 var(--cyan)); }
+  75%  { transform: translate(calc(var(--px) * -0.25), 0);
+         filter: drop-shadow(var(--px) 0 0 var(--amber)); }
+  100% { transform: translate(0, 0);                 filter: none; }
+}
+
+/* ===================================================================== */
+/* Per-scene palette leans (docs/story_spec.md § Atmosphere)             */
+/* ===================================================================== */
+
+/* S3 — "phone screen warms from clinical cyan to softer pink".
+   Lean the dialogue chrome + choice accent pink. */
+.scene[data-scene-id="S3"] {
+  border-color: var(--pink);
+  box-shadow: var(--px) var(--px) 0 var(--pink);
+}
+.scene[data-scene-id="S3"] .scene__dialogue {
+  border-color: var(--pink);
+  box-shadow: var(--px) var(--px) 0 var(--pink);
+}
+.scene[data-scene-id="S3"] .scene__choice-num {
+  color: var(--pink);
+}
+
+/* S4 — warm-then-wrong. Start pink; the is-final-line glitch above
+   introduces the amber flicker on the sprite. */
+.scene[data-scene-id="S4"] {
+  border-color: var(--pink);
+  box-shadow: var(--px) var(--px) 0 var(--pink);
+}
+.scene[data-scene-id="S4"] .scene__dialogue {
+  border-color: var(--pink);
+}
+.scene[data-scene-id="S4"].is-final-line .scene__dialogue {
+  border-color: var(--amber);
+}
+
+/* S5 — "cool, sparse, efficient" — ghost-muted chrome, reduced
+   contrast on the char sprite to suggest distance (per spec). */
+.scene[data-scene-id="S5"] {
+  border-color: var(--ghost);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+}
+.scene[data-scene-id="S5"] .scene__dialogue {
+  border-color: var(--ghost);
+  color: var(--ghost);
+}
+.scene[data-scene-id="S5"] .scene__text {
+  color: var(--ghost);
+}
+.scene[data-scene-id="S5"] .scene__char {
+  opacity: 0.6;
+}
+
+/* S7 — "held breath" — amber tint on the thread chrome. */
+.scene[data-scene-id="S7"] {
+  border-color: var(--amber);
+  box-shadow: var(--px) var(--px) 0 var(--amber);
+}
+.scene[data-scene-id="S7"] .scene__dialogue {
+  border-color: var(--amber);
+}
+.scene[data-scene-id="S7"] .scene__choice-num {
+  color: var(--amber);
+}
+
+/* S9 — "aftermath … navy and ghost only; no accent". S9 renders as
+   an ending (type === 'ending'), so the selector targets `.ending`. */
+.ending[data-scene-id="S9"] {
+  border-color: var(--ghost);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+}
+.ending[data-scene-id="S9"] .ending__title {
+  color: var(--ghost);
+}
+.ending[data-scene-id="S9"] .ending__takeaway {
+  border-left-color: var(--ghost);
+  color: var(--ghost);
+}
+.ending[data-scene-id="S9"] .ending__stage {
+  border-color: var(--ghost);
+}
+
+/* ===================================================================== */
+/* Pause overlay (Esc)                                                   */
+/* ===================================================================== */
+
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--px) * 4);
+  background: rgba(15, 16, 32, 0.88);
+  cursor: pointer;
+}
+
+.pause-overlay__panel {
+  background: var(--navy);
+  border: var(--border) solid var(--cyan);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--pink);
+  padding: calc(var(--px) * 6) calc(var(--px) * 8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--px) * 4);
+  min-width: calc(var(--px) * 72);
+  max-width: calc(var(--px) * 120);
+  cursor: default;
+}
+
+.pause-overlay__title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--pink);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: var(--px) var(--px) 0 var(--cyan);
+}
+
+.pause-overlay__actions {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 3);
+  width: 100%;
+}
+
+.pause-overlay__btn {
+  width: 100%;
+  text-align: center;
+}
+
+.pause-overlay__hint {
+  margin: 0;
+  font-size: 9px;
+  color: var(--ghost);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ===================================================================== */
+/* Reduced-motion: strip the caret blink, glitch, and transitions.       */
+/* The typewriter already respects this at the JS layer.                 */
+/* ===================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .btn:hover,
@@ -376,5 +595,13 @@
   .dev-jumper__btn:hover,
   .dev-jumper__btn:active {
     transition: none;
+  }
+  .scene__text.is-typing::after,
+  .ending__text.is-typing::after {
+    animation: none;
+    opacity: 1;
+  }
+  .scene[data-scene-id="S4"].is-final-line .scene__char {
+    animation: none;
   }
 }

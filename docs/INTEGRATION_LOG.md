@@ -70,4 +70,46 @@
 
 ---
 
+## 2026-04-23T00:00:00Z — chore: tune typewriter default to 15ms
+- **files changed:** `src/engine.js`
+- **notes:** Operator feedback during Slice B smoke judged 30ms/char too slow for ~300-char lines in S4/S7. Introduced `DEFAULT_TYPE_SPEED_MS = 15` at the top of `src/engine.js` and threaded it through `typewriter(el, text, speed = DEFAULT_TYPE_SPEED_MS)`. Documented as a conscious override of `.cursorrules` §Dialogue at the declaration site.
+
+---
+
+## 2026-04-23T00:30:00Z — Slice C: visual polish + pause overlay
+- **files changed:**
+  `src/engine.js`           (Esc-handled pause toggle; `installEscListener()`, `openPause()`, `closePause()`; `returnToTitle()` + `renderScene()` now also `closePause()`),
+  `src/ui/sceneView.js`     (add `.is-typing` on text at line start / remove on advance + choice reveal; add `.is-final-line` on sceneEl when starting the last dialogue line; skip keyboard + click handlers while pause overlay is in the DOM),
+  `src/ui/endingView.js`    (same `.is-typing` toggle on narration; pause-overlay skip),
+  `src/ui/pauseOverlay.js`  **(new)** — role="dialog" aria-modal panel with **Resume** + **Return to title** + Esc hint; backdrop click = resume; panel clicks don't bubble,
+  `styles/scene.css`        (caret blink, `.scene__choice:active` pink lean, S4 `.is-final-line` glitch keyframes, per-scene palette leans for S3 / S4 / S5 / S7 / S9, pause-overlay styles; reduced-motion rules strip caret animation + S4 glitch),
+  `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+- **design choices:**
+  - **Engine owns the Esc toggle.** Installed in `initEngine()` (idempotent via `escInstalled` guard) so a single listener lives for the lifetime of the app. Scene/ending views do NOT listen for Esc — that would duplicate the handler and race the toggle. Views instead skip their own keys/clicks when `document.querySelector('.pause-overlay')` returns non-null.
+  - **Caret is CSS-only**, driven by the presence of `.is-typing` on the text element. No per-frame JS. Blinks at `900ms steps(2, end) infinite`; reduced-motion collapses the animation and pins opacity to 1 (still visible, just not blinking).
+  - **S4 glitch is a short burst**, not an infinite animation: `120ms steps(4, end) 3` — three staccato frames, then settles. Drop-shadows are hard-edged (0 blur) per `.cursorrules` pixel-art discipline.
+  - **S5 lean mutes `.scene__text` to `--ghost`.** Ghost (#7a7f9a) on navy still meets WCAG AA at 12px (~4.8:1). The atmosphere spec explicitly asks for "reduced contrast" to suggest distance; skip-to-end is still one click away.
+  - **S9 selector targets `.ending`** (not `.scene`) because S9's STORY entry is `type: 'ending'` — the ending view is what mounts.
+  - **Pause overlay coexists with the dev jumper.** The dev jumper sits at `z-index: 1000`; the overlay at `z-index: 2000`. Overlay backdrop clicks resume; panel clicks are `stopPropagation()`'d so they don't count as a backdrop-dismiss.
+
+- **user-approved deviations:**
+  - None for Slice C beyond the already-approved Slice-B decisions. The 15ms typewriter tuning committed before Slice C is tracked as its own chore commit (see entry above).
+
+- **tests:**
+  - `node --check` on every JS module, including the new `src/ui/pauseOverlay.js` (9 files) ✓
+  - STORY invariant re-run: 16 keys, BFS from S1 reaches 15/16 · orphans `[S9]` ✓ (unchanged from Slice B; just confirming no regression)
+  - Class-name cross-check: every class emitted by `src/**/*.js` (`classList.*` + `className = ...`) has a matching `.token` in the combined CSS. 43 JS classes → all matched among 48 CSS tokens. No dangling classes. ✓
+  - Manual browser smoke (operator to run): title → Start → S1 types with caret → click through to E1 → takeaway + Return; Esc at any point in S1–S8 opens pause → Resume restores focus → Esc again closes; "Return to title" from pause drops back to the title cleanly; jump to S4 with the dev jumper + advance to last line → sprite flickers three times; S3 reads pink, S5 reads ghost, S7 reads amber; `localStorage.setItem('dev','true')` + reload still shows the dev jumper below the pause overlay (z-index discipline).
+
+- **notes / tech debt:**
+  - **Pause overlay does not trap focus.** Tab from the Return-to-title button can still reach underlying buttons (focus ring visible). For a one-shot classroom piece this is acceptable; if the piece ever ships beyond the presentation, add a focus trap in `pauseOverlay.js`.
+  - **`.scene__text::after` caret is a solid block.** Looks crisp at 12px; on narrow viewports the 1em height might read as a line-height nudge. Watch this at the 375px min width during Slice E projector smoke.
+  - **S5 character opacity of 0.6** applies to whatever sprite is loaded; once Mira art lands in Slice D the reduced-distance effect should re-read — review then.
+  - **`isPauseOpen()` is queried per-event via `querySelector`.** Cheap at our scale but moves a tiny DOM read into the keyboard hot path. If we add more overlays (About modal, etc.) a shared `src/ui/overlayStack.js` registry would be cleaner.
+  - **Reduced-motion only strips S4's glitch; it leaves the palette leans.** Intentional — palette leans are static colour + border changes, not motion.
+  - **About modal is still a `window.alert`.** Not in Slice C scope; moved to backlog.
+
+---
+
 <!-- Next slice appends below. -->

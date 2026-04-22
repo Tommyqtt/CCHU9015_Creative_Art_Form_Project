@@ -116,6 +116,7 @@ export function mountEndingView(root, scene, ctx) {
   function startLine(i) {
     const line = lines[i];
     if (!line) return;
+    textEl.classList.add('is-typing');
     typingDone = false;
     const handle = typewriter(textEl, line.text ?? '');
     typingHandle = handle;
@@ -127,6 +128,7 @@ export function mountEndingView(root, scene, ctx) {
   function finish() {
     if (finished) return;
     finished = true;
+    textEl.classList.remove('is-typing');
     const hasTakeaway = typeof scene.takeaway === 'string' && scene.takeaway.length > 0;
     if (hasTakeaway) takeawayEl.classList.remove('is-hidden');
     actionsEl.classList.remove('is-hidden');
@@ -153,9 +155,14 @@ export function mountEndingView(root, scene, ctx) {
     return target instanceof Element && target.closest('.dev-jumper') !== null;
   }
 
+  function isPauseOpen() {
+    return document.querySelector('.pause-overlay') !== null;
+  }
+
   function onKey(ev) {
     if (ev.defaultPrevented) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (isPauseOpen()) return;
     if (isFromDevJumper(ev.target)) return;
 
     if (finished) {
@@ -172,6 +179,7 @@ export function mountEndingView(root, scene, ctx) {
   document.addEventListener('keydown', onKey);
 
   function onClick(ev) {
+    if (isPauseOpen()) return;
     if (isFromDevJumper(ev.target)) return;
     if (ev.target instanceof Element && ev.target.closest('.btn')) return;
     if (finished) return;

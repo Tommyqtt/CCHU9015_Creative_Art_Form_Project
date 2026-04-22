@@ -151,6 +151,17 @@ export function mountSceneView(root, scene, ctx) {
     if (!line) return;
     speakerEl.textContent = displayLabel(line.speaker, line.note);
     speakerEl.dataset.speaker = line.speaker ?? '';
+    // Caret blink is driven entirely by the `.is-typing` class on
+    // the text element — see styles/scene.css for the keyframes.
+    textEl.classList.add('is-typing');
+    // S4 beat: the spec calls for a glitch on Mira's portrait when
+    // the 8-second reply lands. That happens on the *final* dialogue
+    // line. Toggle the class on the scene root so CSS can key off
+    // `[data-scene-id="S4"].is-final-line .scene__char` without the
+    // view needing to know which scene it's rendering.
+    if (i === dialogue.length - 1) {
+      sceneEl.classList.add('is-final-line');
+    }
     typingDone = false;
     const handle = typewriter(textEl, line.text ?? '');
     typingHandle = handle;
@@ -163,6 +174,8 @@ export function mountSceneView(root, scene, ctx) {
   function showChoices() {
     if (choicesShown) return;
     choicesShown = true;
+    // Caret only blinks while we're still reading dialogue.
+    textEl.classList.remove('is-typing');
     hintEl.textContent = 'Click a choice, or press 1 / 2 / 3.';
     if (choices.length === 0) return;
     choices.forEach((choice, idx) => {
@@ -211,9 +224,20 @@ export function mountSceneView(root, scene, ctx) {
     return target instanceof Element && target.closest('.scene__choice') !== null;
   }
 
+  /**
+   * Pause overlay, when mounted, absorbs all scene interaction: the
+   * engine handles its Esc toggle separately, so here we simply do
+   * nothing while it's up. Queried per-event rather than tracked via
+   * state because the overlay lives outside this view.
+   */
+  function isPauseOpen() {
+    return document.querySelector('.pause-overlay') !== null;
+  }
+
   function onKey(ev) {
     if (ev.defaultPrevented) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (isPauseOpen()) return;
     if (isFromDevJumper(ev.target)) return;
     // Don't hijack typing in inputs (no scene has inputs today, future-proofing).
     if (ev.target instanceof HTMLInputElement) return;
@@ -242,6 +266,7 @@ export function mountSceneView(root, scene, ctx) {
   document.addEventListener('keydown', onKey);
 
   function onClick(ev) {
+    if (isPauseOpen()) return;
     if (isFromDevJumper(ev.target)) return;
     if (isFromChoiceButton(ev.target)) return; // the button's handler fires
     if (choicesShown) return;
