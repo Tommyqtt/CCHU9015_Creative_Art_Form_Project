@@ -98,18 +98,56 @@
   min-height: 240px;
 }
 
+/* Placeholder tile sits behind the <img> at z-index 0. When the
+   asset loads, the img (z-index 1) covers it. When the img fails
+   and we set `.is-hidden`, the tile is revealed — a solid navy
+   panel labelled with the missing asset path so the operator can
+   fix it during Slice D. */
+.scene__bg-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--px) * 4);
+  background: var(--navy);
+  color: var(--ghost);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .scene__bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 0;
+  z-index: 1;
 }
 
 .scene__bg[src=""],
 .scene__bg.is-hidden {
   display: none;
+}
+
+.scene__char-placeholder {
+  position: absolute;
+  right: 6%;
+  bottom: calc(var(--px) * 4);
+  max-width: 40%;
+  min-width: calc(var(--px) * 40);
+  padding: calc(var(--px) * 2) calc(var(--px) * 3);
+  background: var(--navy);
+  border: 2px dashed var(--ghost);
+  color: var(--ghost);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .scene__char {
@@ -118,7 +156,7 @@
   bottom: 0;
   max-height: 70%;
   width: auto;
-  z-index: 1;
+  z-index: 3;
 }
 
 .scene__char[src=""],
@@ -128,7 +166,7 @@
 
 .scene__dialogue {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   margin: calc(var(--px) * 3);
   padding: calc(var(--px) * 4);
   background: rgba(15, 16, 32, 0.92);
@@ -202,7 +240,7 @@
 }
 
 /* ===================================================================== */
-/* Ending view                                                           */
+/* Ending view — final-screen layout                                      */
 /* ===================================================================== */
 
 .ending {
@@ -214,19 +252,28 @@
   min-height: 520px;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--px) * 3);
-  padding: calc(var(--px) * 4);
+  gap: calc(var(--px) * 5);
+  padding: calc(var(--px) * 8) calc(var(--px) * 6);
   overflow: hidden;
-  cursor: pointer;
+  cursor: default;
+  text-align: center;
+  justify-content: center;
 }
 
-.ending__stage {
-  position: relative;
-  flex: 0 0 auto;
-  min-height: 180px;
-  border: var(--border) solid var(--cyan);
-  overflow: hidden;
+.ending__bg-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--px) * 4);
   background: var(--navy);
+  color: var(--ghost);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .ending__bg {
@@ -235,7 +282,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .ending__bg[src=""],
@@ -243,59 +291,158 @@
   display: none;
 }
 
-.ending__char {
-  position: absolute;
-  right: 6%;
-  bottom: 0;
-  max-height: 80%;
-  width: auto;
-  z-index: 1;
-}
-
-.ending__char[src=""],
-.ending__char.is-hidden {
-  display: none;
-}
-
 .ending__title {
-  margin: 0;
-  font-size: 16px;
+  position: relative;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: 20ch;
+  font-size: 32px;
+  line-height: 1.2;
   color: var(--amber);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-.ending__text {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.9;
-  color: var(--cyan);
-  min-height: 6em;
+  text-shadow:
+    var(--px) var(--px) 0 var(--pink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--navy);
   word-break: break-word;
 }
 
+.ending__narration {
+  position: relative;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: 60ch;
+  padding: calc(var(--px) * 4);
+  background: rgba(15, 16, 32, 0.92);
+  border: 2px solid var(--cyan);
+  box-shadow: var(--px) var(--px) 0 var(--pink);
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--cyan);
+  word-break: break-word;
+  text-align: left;
+}
+
 .ending__takeaway {
-  margin: 0;
+  position: relative;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: 56ch;
   padding: calc(var(--px) * 3);
   border-left: var(--border) solid var(--pink);
   font-size: 11px;
   line-height: 1.8;
   color: var(--pink);
   font-style: italic;
+  text-align: left;
 }
 
 .ending__actions {
-  margin-top: auto;
+  position: relative;
+  z-index: 2;
   display: flex;
+  justify-content: center;
+  gap: calc(var(--px) * 4);
+  flex-wrap: wrap;
+}
+
+.ending__action {
+  min-width: calc(var(--px) * 40);
+}
+
+/* `.is-revealed` runs a one-shot fade + tiny upward nudge on the
+   narration / takeaway / actions blocks. `forwards` holds the final
+   state so the content stays on screen after the animation ends. */
+.ending__narration.is-revealed,
+.ending__takeaway.is-revealed,
+.ending__actions.is-revealed {
+  animation: ending-fade-in 500ms ease-out forwards;
+}
+.ending__takeaway.is-revealed  { animation-delay: 120ms; }
+.ending__actions.is-revealed   { animation-delay: 240ms; }
+
+@keyframes ending-fade-in {
+  from { opacity: 0; transform: translateY(calc(var(--px) * 2)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Your-path panel --------------------------------------------- */
+
+.ending__path {
+  position: relative;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: 60ch;
+  width: 100%;
+  padding: calc(var(--px) * 4);
+  background: rgba(15, 16, 32, 0.96);
+  border: var(--border) solid var(--cyan);
+  box-shadow: var(--px) var(--px) 0 var(--amber);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
   gap: calc(var(--px) * 3);
 }
 
-.ending__hint {
+.ending__path.is-revealed {
+  animation: ending-fade-in 300ms ease-out forwards;
+}
+
+.ending__path-title {
   margin: 0;
-  text-align: right;
-  font-size: 9px;
+  font-size: 12px;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ending__path-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: calc(var(--px) * 48);
+  overflow-y: auto;
+  border: 2px solid var(--ghost);
+  padding: calc(var(--px) * 2) calc(var(--px) * 3);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 2);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.ending__path-item {
+  display: flex;
+  gap: calc(var(--px) * 2);
+  align-items: baseline;
+  color: var(--cyan);
+}
+
+.ending__path-item--empty {
   color: var(--ghost);
-  letter-spacing: 0.06em;
+  font-style: italic;
+}
+
+.ending__path-step {
+  flex: 0 0 auto;
+  color: var(--ghost);
+}
+
+.ending__path-id {
+  flex: 0 0 auto;
+  color: var(--amber);
+  min-width: calc(var(--px) * 8);
+}
+
+.ending__path-title-line {
+  flex: 1 1 auto;
+  color: var(--cyan);
+  word-break: break-word;
+}
+
+.ending__path-close {
+  align-self: flex-end;
+  min-width: calc(var(--px) * 24);
 }
 
 /* ===================================================================== */
@@ -368,7 +515,10 @@
   .scene,
   .ending          { min-height: 420px; }
   .scene__text,
-  .ending__text    { font-size: 11px; }
+  .ending__narration { font-size: 11px; }
+  .ending__title   { font-size: 20px; letter-spacing: 0.08em; }
+  .ending__actions { flex-direction: column; align-items: stretch; }
+  .ending__action  { min-width: 0; }
   .scene__choice   { font-size: 10px; padding: calc(var(--px) * 2) calc(var(--px) * 3); }
   .dev-jumper      { font-size: 8px; right: calc(var(--px) * 2); bottom: calc(var(--px) * 2); }
 }
@@ -382,7 +532,7 @@
    while the owning line has `.is-typing` (added by the view at line
    start, removed on advance / choice reveal / ending finish). */
 .scene__text::after,
-.ending__text::after {
+.ending__title::after {
   content: "";
   display: inline-block;
   width: calc(var(--px) * 2);
@@ -394,7 +544,7 @@
 }
 
 .scene__text.is-typing::after,
-.ending__text.is-typing::after {
+.ending__title.is-typing::after {
   opacity: 1;
   animation: caret-blink 900ms steps(2, end) infinite;
 }
@@ -404,22 +554,43 @@
 }
 
 /* ===================================================================== */
-/* Choice button pressed-state polish                                    */
+/* Choice button states                                                  */
 /* ===================================================================== */
 
-/* The base `.btn:active` already does the 2px translate + shadow drop
-   (see styles/main.css). On long choice labels the translate alone can
-   read as noise, so add a pink border lean on press. Hover stays cyan
-   to avoid out-shouting the speaker palette in the dialogue box. */
-.scene__choice:active,
-.scene__choice.is-pressed {
-  border-color: var(--pink);
-  color: var(--pink);
+/* Override the default `.btn` border width so choice buttons sit at
+   the 2px / "quieter" end of the .cursorrules pixel-border range. The
+   dialogue box above already carries the chunkier 3px chrome. */
+.scene__choice {
+  border-width: 2px;
 }
 
+/* Hover = invert colours. Keeps the pink accent on focus distinct
+   from the press animation, which reuses the same invert state. */
+.scene__choice:hover {
+  background: var(--cyan);
+  color: var(--navy);
+  border-color: var(--cyan);
+  box-shadow: var(--px) var(--px) 0 var(--pink);
+}
+.scene__choice:hover .scene__choice-num {
+  color: var(--navy);
+}
+
+/* `:active` fires while the mouse is physically down. `.is-pressed`
+   is applied by `commitChoice()` in sceneView.js for the 80ms window
+   between input and `onChoice` — keyboard 1/2/3 path benefits from
+   the same animation that the mouse gets. */
+.scene__choice:active,
+.scene__choice.is-pressed {
+  transform: scale(0.95);
+  background: var(--cyan);
+  color: var(--navy);
+  border-color: var(--cyan);
+  box-shadow: none;
+}
 .scene__choice:active .scene__choice-num,
 .scene__choice.is-pressed .scene__choice-num {
-  color: var(--pink);
+  color: var(--navy);
 }
 
 /* ===================================================================== */
@@ -507,20 +678,25 @@
 }
 
 /* S9 — "aftermath … navy and ghost only; no accent". S9 renders as
-   an ending (type === 'ending'), so the selector targets `.ending`. */
+   an ending (type === 'ending'), so the selector targets `.ending`.
+   Override the default pink-on-amber title shadow too, so the beat
+   reads as fully drained. */
 .ending[data-scene-id="S9"] {
   border-color: var(--ghost);
   box-shadow: var(--px) var(--px) 0 var(--ghost);
 }
 .ending[data-scene-id="S9"] .ending__title {
   color: var(--ghost);
+  text-shadow: var(--px) var(--px) 0 var(--navy);
+}
+.ending[data-scene-id="S9"] .ending__narration {
+  border-color: var(--ghost);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  color: var(--ghost);
 }
 .ending[data-scene-id="S9"] .ending__takeaway {
   border-left-color: var(--ghost);
   color: var(--ghost);
-}
-.ending[data-scene-id="S9"] .ending__stage {
-  border-color: var(--ghost);
 }
 
 /* ===================================================================== */
@@ -597,11 +773,24 @@
     transition: none;
   }
   .scene__text.is-typing::after,
-  .ending__text.is-typing::after {
+  .ending__title.is-typing::after {
     animation: none;
     opacity: 1;
   }
   .scene[data-scene-id="S4"].is-final-line .scene__char {
     animation: none;
+  }
+  /* Fade-in reveals: skip the keyframe, snap to the final state. */
+  .ending__narration.is-revealed,
+  .ending__takeaway.is-revealed,
+  .ending__actions.is-revealed,
+  .ending__path.is-revealed {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .scene__choice:active,
+  .scene__choice.is-pressed {
+    transform: none;
   }
 }

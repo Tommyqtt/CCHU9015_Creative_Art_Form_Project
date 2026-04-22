@@ -40,23 +40,24 @@
 
 ---
 
-## SLICE C — Visual polish and theme beats
+## SLICE C — Scene and ending rendering with choices
 
 - **status:** DONE (2026-04-23)
-- **commit:** see `docs/INTEGRATION_LOG.md` (third entry)
-- **files touched:** `src/engine.js`, `src/ui/sceneView.js`, `src/ui/endingView.js`, `src/ui/pauseOverlay.js` **(new)**, `styles/scene.css`, `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+- **commits:** see `docs/INTEGRATION_LOG.md` (third + fourth entries — C.1 "visual polish + pause overlay", C.2 "scene and ending rendering with choices")
+- **files touched:** `src/engine.js`, `src/ui/sceneView.js`, `src/ui/endingView.js` **(rewritten in C.2)**, `src/ui/pauseOverlay.js` **(new in C.1)**, `styles/scene.css`, `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
 
-**Goal.** The scene reads as pixel-art and not as a wireframe. Caret blink on dialogue. Choice buttons have the pressed state from `.cursorrules`. S4's "glitch at final line" beat fires via `.scene[data-scene-id="S4"].is-final-line .scene__char` per `docs/story_spec.md` §S4 atmosphere. Palette leans apply per scene (S3 `--pink`, S5 `--ghost`, S7 `--amber`, S9 `--ghost`).
+**Goal.** Every scene S1–S8 renders a background layer, character sprite, speaker-coloured dialogue box, typewriter text, and clickable + keyboard-navigable choice buttons. Every ending E1–E7 + S9 renders a shared `bg_endings.png` background, a typewritten title, a fade-in narration paragraph, and **Replay** + **View my path** actions. Missing assets render as labelled placeholder tiles so Slice C can ship before Slice D/E deliver art. Slice C also ships the atmosphere beats for C.1: caret blink, S4 glitch, palette leans, Esc pause overlay.
 
 **Acceptance (all met).**
-- [x] Caret blink animation (paused under `prefers-reduced-motion`). View toggles `.is-typing` on the text element at line start and removes it on advance / choice reveal / ending finish.
-- [x] Choice buttons gain a pressed 2px-down/right translate on `:active` (inherited from `.btn:active` in `main.css`) plus a pink border-lean on `.scene__choice:active` so the press reads on long labels.
-- [x] S4 sprite flicker fires via `.scene[data-scene-id="S4"].is-final-line .scene__char`. The view toggles `is-final-line` when starting the last dialogue line; no flicker on other scenes.
-- [x] Palette leans verified: S3 pink, S4 pink→amber on final line, S5 ghost + sprite 60% opacity, S7 amber, S9 ghost (targets `.ending` because S9's type is `ending`).
-- [x] No ad-hoc hex values added — only `rgba(var(--navy)-equivalent, alpha)` for the pause backdrop, matching the existing `.scene__dialogue` pattern.
-- [x] Pause overlay (Esc) shipped. Engine installs a document-level Esc handler in `initEngine`; Esc toggles a themed panel with **Resume** + **Return to title**. Scene and ending views skip their own keyboard/click handlers while the overlay is up (queried via `document.querySelector('.pause-overlay')`).
+- [x] **Scene rendering.** Background, character sprite, dialogue box, speaker tag (colour driven by `data-speaker`), typewriter at 15ms/char. Click / Enter / Space: skip current line or advance; at end of dialogue, choice buttons fade in.
+- [x] **Choice buttons.** Pixel-styled 2px border, hover inverts to navy-on-cyan with a pink shadow, `:active` / `.is-pressed` scales to 0.95 + inverts. Prefixed with `1.` / `2.` / `3.`. Clicks and 1 / 2 / 3 keypresses both route through `commitChoice(idx)` which applies `.is-pressed` for 80ms before calling `engine.handleChoice(choice)`. Under reduced motion the 80ms delay collapses to 0.
+- [x] **Keyboard.** Scene: 1 / 2 / 3 on choices, Enter / Space on dialogue. Ending: Enter / Space skips the title typewriter; Tab navigates Replay ↔ View my path. Esc anywhere in a mounted scene/ending opens the pause overlay.
+- [x] **Typewriter respects `prefers-reduced-motion`.** Synchronous write at JS layer (from Slice B); caret animation stripped at CSS layer (from Slice C.1); fade-in reveals stripped (from Slice C.2); choice-press delay collapses to 0ms (from Slice C.2).
+- [x] **Ending rendering.** Single `assets/bg_endings.png` behind every ending (placeholder tile until Slice D draws the art). Title typed letter-by-letter (`scene.title.toUpperCase()`) with a caret on the title element. Narration concatenated into one paragraph, fades in + nudges up after the title finishes. Takeaway (when authored) fades in next. **Replay** (resets state + returns to title) and **View my path** (opens a scrollable `state.history` list with `STORY`-sourced titles) both working. Close button on the path panel returns focus to "View my path".
+- [x] **Placeholder handling.** Every `<img>` has a sibling placeholder `<div>` showing the missing asset path. On `load` the placeholder gets `.is-hidden`; on `error` the img gets `.is-hidden` and the placeholder stays visible. Applies to scene bg / scene char / ending bg.
+- [x] **Visual polish (C.1).** Caret blink on active dialogue + ending title. S4 sprite glitch on `.is-final-line`. Palette leans for S3 pink / S4 pink→amber / S5 ghost+0.6 opacity / S7 amber / S9 ghost. Pause overlay (Esc) with Resume + Return to title.
 
-Note: Slice C used to be titled "wire engine, scene renderer, typewriter, keybindings" — all of that landed in Slice B, so the former Slice C contents are now closed. Slice C in this document is the *new* Slice C (visual polish + pause).
+Note: Slice C was originally titled "wire engine, scene renderer, typewriter, keybindings" (now all closed in Slice B). C.1 shipped visual polish + pause; C.2 expanded the render pipeline with placeholder handling, the 80ms press animation, and the final-screen ending rewrite with path viewer.
 
 ---
 

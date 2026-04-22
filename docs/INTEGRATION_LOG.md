@@ -112,4 +112,40 @@
 
 ---
 
+## 2026-04-23T01:30:00Z — Slice C.2: scene and ending rendering with choices
+- **files changed:**
+  `src/ui/sceneView.js`   (bg + char placeholder tiles with `load`/`error` listeners; 80ms choice press animation via `commitChoice(idx)` routed from both click and 1/2/3 key paths; reduced-motion collapses the 80ms delay to 0),
+  `src/ui/endingView.js`  **(rewritten)** — dropped `.ending__stage`/`.ending__char`; now renders shared `bg_endings.png` + placeholder, typewritten uppercased title, concatenated narration paragraph that fades in after the title, optional takeaway, and **Replay** + **View my path** actions. `View my path` toggles a scrollable list of `state.history` (looked up in STORY for display titles),
+  `styles/scene.css`      (placeholder tile styles for bg + char; scene choice hover = invert colours, active / `.is-pressed` = scale(0.95) + invert; `ending__title` grows to 32px with a pink-on-navy hard-edged text shadow; new `.ending__narration` / `.ending__takeaway` / `.ending__path*` rules; `.is-revealed` keyframe `ending-fade-in` with staggered delays; caret selector extended from `.ending__text` to `.ending__title` to match the new DOM; reduced-motion strips all new animations),
+  `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+- **design choices:**
+  - **Placeholder tiles render *under* the `<img>` at a lower `z-index` and hide on `load`, stay visible on `error`.** Bg placeholder fills the stage (solid navy, centred ghost-coloured path label). Char placeholder is a small dashed-border badge at `right: 6%` — positioned similarly to the real sprite so Slice D's swap is a drop-in. Scene view's z-index stack went from `bg=0, char=1, dialogue=2` to `bg-placeholder=0, bg=1, char-placeholder=2, char=3, dialogue=4` so the dialogue always wins over the char sprite even when the sprite lands across the dialogue box on wide viewports.
+  - **Single `bg_endings.png` for every ending.** Per-ending `scene.background` fields in `src/story.js` are intentionally ignored by the rewritten `endingView.js`. This is a thematic call: all endings share the same after-piece surface. If the presentation ever wants per-ending art, change the constant `ENDING_BG` to `scene.background || ENDING_BG` in `endingView.js`.
+  - **80ms press animation via `commitChoice(idx)`.** Both click and 1/2/3 keypress paths call the same function, which adds `.is-pressed` to the button, schedules `onChoice(choices[idx])` after 80ms, and locks further presses (`choiceLocked = true`) so double-click / key-repeat can't commit twice. Under reduced motion the delay is `0ms` — the lock + animation class still apply so the visual feedback is preserved on the first input, just without the timed hold.
+  - **Choice hover = invert colours.** Navy text on cyan background with a pink bottom-right shadow. Reads as a pixel-arcade button press rather than the default "border changes colour" hover. `.cursorrules` §Visual style specifies "pressed 2px down/right" — that is honoured by `.btn:active` on every other `.btn` in the piece; scene choices override to `scale(0.95)` per the Slice C brief.
+  - **Narration as a single paragraph.** The Slice B ending view typed each narration line sequentially; the Slice C.2 brief asks for the narration to fade in after the title finishes. The STORY data still carries multi-line narration; the view now joins with a single space and renders it all at once with a fade-in keyframe. This loses the per-line advance cadence — a conscious trade for the "final-screen" feel.
+  - **Esc-closes-path branch removed from `endingView.onKey`.** Engine's document-level Esc handler installs first (in `initEngine`) and always `preventDefault`'s — the view's branch was dead code. Pressing Esc while a path panel is open still opens pause; dismissing pause shows the path panel still there; Close button (or View-my-path again) closes it. Documented in `docs/HANDOVER_NOTE.md`.
+
+- **user-approved deviations:**
+  - **Pause overlay (shipped in C.1) is kept.** The Slice C.2 task list did not mention pause, but removing it would regress Slice C.1 acceptance items from the earlier handoff. Pause continues to no-op on the title screen and only fires while a scene/ending is mounted.
+
+- **tests:**
+  - `node --check` on all 9 JS modules ✓
+  - STORY reachability unchanged: 16 keys, BFS from S1 reaches 15, orphans `[S9]` ✓
+  - Ending invariants: every ending has `narration: Line[]` + `takeaway: string` ✓
+  - Class-name cross-check: 55 JS classes, 60 CSS tokens, 0 missing ✓
+  - Manual browser smoke (operator to run): title → Start → walk `S1 → S3 → S4 → S7 → E4`, confirm (a) placeholders show in each scene with the correct asset path, (b) caret blinks, (c) typing click-to-skip works, (d) choice hover inverts and press scales, (e) 1/2/3 commits the matching choice with an 80ms visible hold, (f) E4 ending types "THE INFORMED REALIST", narration fades in, Replay returns to title with cleared state, View my path opens a scrollable list showing `[01 · S1 · The Scroll, 02 · S3 · The Hook Lands, …]`. Also: jump directly to S9 via dev jumper → ending chrome is ghost-only, takeaway element hidden (spec leaves it empty), both buttons work.
+
+- **notes / tech debt:**
+  - **Choice press 80ms is not cancellable.** If the operator hits another choice before the 80ms elapses, `choiceLocked` absorbs the second input — but the first's scheduled `onChoice` will still fire. If a future slice surfaces mis-presses as a concern, wrap the timer id and clear it on unmount or on a second press that replaces the selection.
+  - **Narration fade-in with `prefers-reduced-motion`** jumps straight to final state and `opacity: 1` — no fade — which is correct behaviour, but verify on a Mac trackpad with reduced-motion enabled during the classroom-projector dress rehearsal.
+  - **`ending__path-list` `max-height` is `calc(var(--px) * 48) = 192px`.** Fits ~10 history entries at 10px font / 1.6 line-height. Our longest likely run (S1→S2→S3→S4→S5→S4→S7→E5) is 8 entries, comfortably within. Revisit if a future feature lets the player re-read endings during a run.
+  - **`STORY` is now an `endingView` dependency.** Slight coupling bump — the view needs STORY to resolve `history[]` ids to display titles. Acceptable: STORY is the single source of truth per `.cursorrules`, and any UI reading from the history *would* need the title resolution anyway.
+  - **Placeholder tiles use the `.is-hidden` utility class from main.css.** No new utilities introduced; `.is-hidden { display: none !important }` continues to cover the "hide dead `<img>` / revealed-placeholder" behaviour.
+  - **About modal** still a `window.alert`. Same backlog note as C.1.
+  - **Reduced-motion + `.is-pressed` on choice.** We strip `transform: none` but leave the invert colours — the press beat is conveyed by colour even without the scale. Good.
+
+---
+
 <!-- Next slice appends below. -->

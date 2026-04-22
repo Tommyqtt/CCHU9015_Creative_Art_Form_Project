@@ -89,29 +89,52 @@ export function mountSceneView(root, scene, ctx) {
   const stage = document.createElement('div');
   stage.className = 'scene__stage';
 
+  // Placeholder tiles sit behind the <img> tags. When the asset loads,
+  // the img fully covers them (same `position: absolute; inset: 0`).
+  // When the asset 404s, we set `.is-hidden` on the img, revealing the
+  // placeholder — a solid navy tile with the asset path as a ghost-
+  // coloured label so the operator can see which file is missing at a
+  // glance. Lets Slice C ship before Slice D/E deliver real art.
+  const bgPath = typeof scene.background === 'string' ? scene.background : '';
+  const bgPlaceholder = document.createElement('div');
+  bgPlaceholder.className = 'scene__bg-placeholder';
+  bgPlaceholder.setAttribute('aria-hidden', 'true');
+  bgPlaceholder.textContent = bgPath || '(no background)';
+
   const bg = document.createElement('img');
   bg.className = 'scene__bg';
-  bg.src = typeof scene.background === 'string' ? scene.background : '';
+  bg.src = bgPath;
   bg.alt = '';
   bg.setAttribute('aria-hidden', 'true');
-  // Hide the broken-image icon if the asset doesn't exist yet (Slice E).
+  bg.addEventListener('load',  () => { bgPlaceholder.classList.add('is-hidden'); });
   bg.addEventListener('error', () => { bg.classList.add('is-hidden'); });
 
-  const charEl = document.createElement('img');
-  charEl.className = 'scene__char';
-  charEl.alt = '';
-  charEl.setAttribute('aria-hidden', 'true');
+  stage.append(bgPlaceholder, bg);
+
   if (scene.character && typeof scene.character.sprite === 'string') {
-    charEl.src = scene.character.sprite;
+    const charPath = scene.character.sprite;
+    const charPlaceholder = document.createElement('div');
+    charPlaceholder.className = 'scene__char-placeholder';
+    charPlaceholder.setAttribute('aria-hidden', 'true');
+    charPlaceholder.textContent = charPath;
+
+    const charEl = document.createElement('img');
+    charEl.className = 'scene__char';
+    charEl.alt = '';
+    charEl.setAttribute('aria-hidden', 'true');
+    charEl.src = charPath;
     charEl.dataset.pose = scene.character.pose ?? 'idle';
     charEl.dataset.position = scene.character.position ?? 'center';
+    // Char sprite is positioned differently from its placeholder tile
+    // (placeholder is a labelled badge; the sprite is the right-edge
+    // figure). On load we hide the placeholder so the two don't show
+    // together. On error we hide the broken <img> and leave the
+    // placeholder visible.
+    charEl.addEventListener('load',  () => { charPlaceholder.classList.add('is-hidden'); });
     charEl.addEventListener('error', () => { charEl.classList.add('is-hidden'); });
-  } else {
-    charEl.classList.add('is-hidden');
-    charEl.src = '';
-  }
 
-  stage.append(bg, charEl);
+    stage.append(charPlaceholder, charEl);
+  }
 
   const dialogueEl = document.createElement('section');
   dialogueEl.className = 'scene__dialogue';
@@ -171,6 +194,41 @@ export function mountSceneView(root, scene, ctx) {
     });
   }
 
+  /**
+   * Duration of the visible press animation on a choice button
+   * before the engine is told about the choice. Matches the CSS
+   * `.scene__choice.is-pressed` keyframe in styles/scene.css.
+   * Under reduced motion we collapse this to 0ms — the reader
+   * gets instant feedback and we don't introduce a phantom delay.
+   */
+  const CHOICE_PRESS_MS = (typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    ? 0
+    : 80;
+
+  /** @type {Array<HTMLButtonElement>} populated when choices mount. */
+  const choiceButtons = [];
+  /** Guard against double-commit when a button is clicked twice rapidly. */
+  let choiceLocked = false;
+
+  /**
+   * Trigger the press animation on a choice button, then hand the
+   * choice to the engine after CHOICE_PRESS_MS. Idempotent: only the
+   * first invocation commits; further calls are ignored until the
+   * engine swaps the scene out (and the whole view unmounts).
+   * @param {number} idx — index in the choices array.
+   * @returns {void}
+   */
+  function commitChoice(idx) {
+    if (choiceLocked) return;
+    if (idx < 0 || idx >= choices.length) return;
+    choiceLocked = true;
+    const btn = choiceButtons[idx];
+    if (btn) btn.classList.add('is-pressed');
+    setTimeout(() => onChoice(choices[idx]), CHOICE_PRESS_MS);
+  }
+
   function showChoices() {
     if (choicesShown) return;
     choicesShown = true;
@@ -191,13 +249,13 @@ export function mountSceneView(root, scene, ctx) {
       lbl.className = 'scene__choice-label';
       lbl.textContent = choice.label ?? '';
       btn.append(num, lbl);
-      btn.addEventListener('click', () => onChoice(choice));
+      btn.addEventListener('click', () => commitChoice(idx));
       choicesEl.appendChild(btn);
+      choiceButtons.push(btn);
     });
     choicesEl.classList.remove('is-hidden');
     queueMicrotask(() => {
-      const first = choicesEl.querySelector('.scene__choice');
-      if (first instanceof HTMLElement) first.focus();
+      if (choiceButtons[0]) choiceButtons[0].focus();
     });
   }
 
@@ -249,10 +307,11 @@ export function mountSceneView(root, scene, ctx) {
         const idx = Number(ev.key) - 1;
         if (idx >= 0 && idx < choices.length) {
           ev.preventDefault();
-          onChoice(choices[idx]);
+          commitChoice(idx);
         }
       }
-      // Enter / Space on choice buttons is handled natively.
+      // Enter / Space on choice buttons is handled natively — the
+      // click listener then routes through commitChoice.
       return;
     }
 
