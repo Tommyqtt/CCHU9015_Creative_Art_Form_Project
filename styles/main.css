@@ -1,0 +1,121 @@
+/* styles/main.css — palette + typography + shared UI primitives for
+   "Subscribed". Loaded after reset.css, before scene.css.
+
+   The palette comes straight from .cursorrules. No ad-hoc hex values in
+   any stylesheet — if you need a new colour, add a token here first. */
+
+:root {
+  /* Palette */
+  --navy:  #0f1020;  /* deep background / loneliness */
+  --cyan:  #6ee7ff;  /* phone-glow / primary UI */
+  --pink:  #ff6fb5;  /* creator / romance accent */
+  --amber: #ffb347;  /* warning / money */
+  --ghost: #7a7f9a;  /* muted text / disabled / silence */
+
+  /* Spacing (4px grid to match pixel-art aesthetic) */
+  --px:     4px;
+  --border: 3px;
+
+  /* Sizing */
+  --stage-max: 960px;
+}
+
+/* Base typography — Press Start 2P everywhere, per .cursorrules. */
+html,
+body {
+  background: var(--navy);
+  color: var(--cyan);
+  font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+body {
+  padding: calc(var(--px) * 4);
+}
+
+/* Pixel-art discipline: crisp scaling for every bitmap. */
+img,
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* App shell — single mount point that title/scene/etc. swap into. */
+#app {
+  max-width: var(--stage-max);
+  margin: 0 auto;
+  min-height: calc(100vh - var(--px) * 8);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------------------- */
+/* Button primitive                                                      */
+/* --------------------------------------------------------------------- */
+
+/* .btn is the shared look for Start / About / (future) Continue /
+   choice-list buttons. Scene-specific variations live in scene.css. */
+.btn {
+  display: inline-block;
+  padding: calc(var(--px) * 3) calc(var(--px) * 5);
+  border: var(--border) solid var(--cyan);
+  background: var(--navy);
+  color: var(--cyan);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  text-decoration: none;
+}
+
+.btn:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+.btn:active,
+.btn.is-pressed {
+  transform: translate(calc(var(--px) / 2), calc(var(--px) / 2));
+  box-shadow: none;
+}
+
+.btn--primary {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.btn--primary:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* --------------------------------------------------------------------- */
+/* Focus ring — cyan, hard-edged, visible, never coloured via JS.        */
+/* --------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: var(--border) solid var(--cyan);
+  outline-offset: calc(var(--px) / 2);
+}
+
+/* --------------------------------------------------------------------- */
+/* Utilities                                                             */
+/* --------------------------------------------------------------------- */
+
+.is-hidden {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

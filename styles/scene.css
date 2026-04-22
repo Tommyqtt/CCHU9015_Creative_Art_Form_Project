@@ -1,0 +1,176 @@
+/* styles/scene.css — layout for the title screen and the placeholder
+   scene view shipped in Slice A. Scene-specific visual beats (S4 glitch
+   etc.) will be added in later slices.
+
+   Class names here belong to the Slice-A UI modules (src/ui/*.js).
+   They will be reconciled against the ORCHESTRATION §3.3 class-name
+   contract when Slice C lands the real scene renderer. */
+
+/* --------------------------------------------------------------------- */
+/* Title screen                                                          */
+/* --------------------------------------------------------------------- */
+
+.title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--px) * 6);
+  text-align: center;
+  padding: calc(var(--px) * 6) calc(var(--px) * 4);
+}
+
+.title__logo {
+  font-size: 40px;
+  line-height: 1.1;
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+  /* Hard-edged pixel shadow — no blur, per .cursorrules. */
+  text-shadow:
+    var(--px) var(--px) 0 var(--pink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--navy);
+}
+
+.title__subtitle {
+  font-size: 12px;
+  color: var(--ghost);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  max-width: 60ch;
+  line-height: 1.8;
+}
+
+.title__tagline {
+  font-size: 10px;
+  color: var(--amber);
+  letter-spacing: 0.06em;
+  max-width: 48ch;
+  line-height: 1.8;
+}
+
+.title__menu {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 3);
+  margin-top: calc(var(--px) * 4);
+}
+
+.title__hint {
+  margin-top: calc(var(--px) * 4);
+  font-size: 10px;
+  color: var(--ghost);
+  letter-spacing: 0.08em;
+}
+
+.title__course {
+  margin-top: calc(var(--px) * 8);
+  font-size: 9px;
+  color: var(--ghost);
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+}
+
+/* --------------------------------------------------------------------- */
+/* Scene view (placeholder — Slice C ships the real one)                 */
+/* --------------------------------------------------------------------- */
+
+.scene {
+  flex: 1;
+  position: relative;
+  border: var(--border) solid var(--cyan);
+  background: var(--navy);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scene__stage {
+  flex: 1;
+  position: relative;
+}
+
+.scene__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.scene__bg[src=""] {
+  display: none;
+}
+
+.scene__char {
+  position: absolute;
+  right: 6%;
+  bottom: 0;
+  max-height: 70%;
+  width: auto;
+  z-index: 1;
+}
+
+.scene__char[src=""],
+.scene__char.is-hidden {
+  display: none;
+}
+
+.scene__dialogue {
+  position: relative;
+  z-index: 2;
+  margin: calc(var(--px) * 3);
+  padding: calc(var(--px) * 4);
+  background: rgba(15, 16, 32, 0.92);
+  border: var(--border) solid var(--cyan);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  min-height: calc(var(--px) * 18);
+  color: var(--cyan);
+}
+
+.scene__choices {
+  margin: 0 calc(var(--px) * 3) calc(var(--px) * 3);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 2);
+}
+
+.scene__placeholder {
+  margin: auto;
+  padding: calc(var(--px) * 6);
+  text-align: center;
+  color: var(--ghost);
+  font-size: 12px;
+  line-height: 1.8;
+  max-width: 40ch;
+}
+
+.scene__placeholder code {
+  color: var(--amber);
+  font-family: inherit;
+}
+
+/* --------------------------------------------------------------------- */
+/* Narrow viewports — stay usable down to 375px per .cursorrules.        */
+/* --------------------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  body { padding: calc(var(--px) * 2); }
+  .title__logo    { font-size: 28px; }
+  .title__subtitle { font-size: 10px; }
+  .title__tagline { font-size: 9px; }
+  .scene { min-height: 360px; }
+}
+
+/* Honour reduced-motion: nothing in Slice A animates, but the primitives
+   above are written so nothing *needs* to animate to be legible. */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn:hover,
+  .btn:active {
+    transition: none;
+  }
+}
