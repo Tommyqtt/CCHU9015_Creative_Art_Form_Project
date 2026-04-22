@@ -1,50 +1,94 @@
 /**
  * @file src/main.js — app entry for "Subscribed".
  *
- * Boots on DOMContentLoaded, mounts the title screen, and swaps to the
- * scene-view placeholder when the player starts. Keeps imports small
- * on purpose — the entry module is glue, never story or DOM logic.
+ * Responsibilities:
+ *   - Boot on DOMContentLoaded.
+ *   - Own the title-screen lifecycle (mount/unmount). Everything scene-
+ *     and ending-shaped belongs to the engine.
+ *   - Install the engine with a "return to title" callback so endings
+ *     can bring the player back without main.js importing any ending
+ *     state.
+ *   - Mount the dev jumper if `localStorage.getItem('dev') === 'true'`.
  *
- * Slice A does not yet call into engine.js. Slice C will add the
- * renderScene("S1") call after mountSceneView().
+ * Swap discipline:
+ *   - Only ONE of { title, engine-owned view } can be in #app at a time.
+ *   - When the title is up, `engine.currentScreen` is null.
+ *   - When a scene/ending is up, `titleHandle` is null.
+ *   - A dev-jumper "jump" from the title correctly unmounts the title
+ *     (removes its Enter listener) before asking the engine to render.
  */
 
-import { reset } from "./state.js";
-import { mountTitleScreen } from "./ui/titleScreen.js";
-import { mountSceneView } from "./ui/sceneView.js";
+import { reset } from './state.js';
+import { initEngine, renderScene } from './engine.js';
+import { mountTitleScreen } from './ui/titleScreen.js';
+import { mountDevJumper } from './ui/devJumper.js';
 
-const APP_ROOT_SELECTOR = "#app";
+const APP_ROOT_SELECTOR = '#app';
 
-/** Handle to the currently-mounted screen so we can unmount cleanly. */
-let currentScreen = null;
+/** @type {{unmount: () => void} | null} */
+let titleHandle = null;
+let engineReady = false;
 
-/** Swap the app root to the title screen. */
-function showTitleScreen() {
+function getRoot() {
   const root = document.querySelector(APP_ROOT_SELECTOR);
   if (!root) {
     console.error(`main: ${APP_ROOT_SELECTOR} not found in DOM.`);
-    return;
+    return null;
   }
-  if (currentScreen && typeof currentScreen.unmount === "function") {
-    currentScreen.unmount();
-  }
+  return root;
+}
+
+/**
+ * Lazy-init the engine on first need. Idempotent; safe to call
+ * multiple times (a repeat call just re-installs the hook, which is
+ * the same function).
+ */
+function ensureEngine(root) {
+  if (engineReady) return;
+  initEngine(root, { onReturnToTitle: showTitleScreen });
+  engineReady = true;
+}
+
+/**
+ * Swap the app root to the title screen. Resets state so returning from
+ * an ending starts the next playthrough clean.
+ */
+function showTitleScreen() {
+  const root = getRoot();
+  if (!root) return;
   reset();
-  currentScreen = mountTitleScreen(root, {
-    onStart: showSceneView,
+  if (titleHandle && typeof titleHandle.unmount === 'function') {
+    titleHandle.unmount();
+  }
+  titleHandle = mountTitleScreen(root, {
+    onStart: () => jumpTo('S1'),
   });
 }
 
-/** Swap the app root to the scene view (placeholder for Slice A). */
-function showSceneView() {
-  const root = document.querySelector(APP_ROOT_SELECTOR);
-  if (!root) {
-    console.error(`main: ${APP_ROOT_SELECTOR} not found in DOM.`);
-    return;
+/**
+ * Unmount the title (if present) and ask the engine to render `sceneId`.
+ * Used by both the title's Start button and the dev jumper.
+ * @param {string} sceneId
+ */
+function jumpTo(sceneId) {
+  const root = getRoot();
+  if (!root) return;
+  if (titleHandle && typeof titleHandle.unmount === 'function') {
+    titleHandle.unmount();
+    titleHandle = null;
   }
-  if (currentScreen && typeof currentScreen.unmount === "function") {
-    currentScreen.unmount();
-  }
-  currentScreen = mountSceneView(root);
+  ensureEngine(root);
+  renderScene(sceneId);
 }
 
-document.addEventListener("DOMContentLoaded", showTitleScreen);
+function bootDevJumper() {
+  if (typeof window === 'undefined') return;
+  if (typeof window.localStorage === 'undefined') return;
+  if (window.localStorage.getItem('dev') !== 'true') return;
+  mountDevJumper(document.body, { onJump: jumpTo });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  showTitleScreen();
+  bootDevJumper();
+});

@@ -1,14 +1,12 @@
-/* styles/scene.css — layout for the title screen and the placeholder
-   scene view shipped in Slice A. Scene-specific visual beats (S4 glitch
-   etc.) will be added in later slices.
+/* styles/scene.css — layout for the title screen, the scene view,
+   the ending view, and the developer scene-jumper panel.
 
-   Class names here belong to the Slice-A UI modules (src/ui/*.js).
-   They will be reconciled against the ORCHESTRATION §3.3 class-name
-   contract when Slice C lands the real scene renderer. */
+   Slice B brings up the functional, legible styling. Polish beats
+   (caret blink, S4 glitch, palette leans per scene) land in Slice D. */
 
-/* --------------------------------------------------------------------- */
+/* ===================================================================== */
 /* Title screen                                                          */
-/* --------------------------------------------------------------------- */
+/* ===================================================================== */
 
 .title {
   flex: 1;
@@ -26,7 +24,6 @@
   line-height: 1.1;
   color: var(--cyan);
   letter-spacing: 0.1em;
-  /* Hard-edged pixel shadow — no blur, per .cursorrules. */
   text-shadow:
     var(--px) var(--px) 0 var(--pink),
     calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--navy);
@@ -71,9 +68,9 @@
   letter-spacing: 0.06em;
 }
 
-/* --------------------------------------------------------------------- */
-/* Scene view (placeholder — Slice C ships the real one)                 */
-/* --------------------------------------------------------------------- */
+/* ===================================================================== */
+/* Scene view (typewriter dialogue + choices)                            */
+/* ===================================================================== */
 
 .scene {
   flex: 1;
@@ -81,15 +78,17 @@
   border: var(--border) solid var(--cyan);
   background: var(--navy);
   box-shadow: var(--px) var(--px) 0 var(--ghost);
-  min-height: 480px;
+  min-height: 520px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .scene__stage {
   flex: 1;
   position: relative;
+  min-height: 240px;
 }
 
 .scene__bg {
@@ -101,7 +100,8 @@
   z-index: 0;
 }
 
-.scene__bg[src=""] {
+.scene__bg[src=""],
+.scene__bg.is-hidden {
   display: none;
 }
 
@@ -127,8 +127,34 @@
   background: rgba(15, 16, 32, 0.92);
   border: var(--border) solid var(--cyan);
   box-shadow: var(--px) var(--px) 0 var(--ghost);
-  min-height: calc(var(--px) * 18);
+  min-height: calc(var(--px) * 22);
   color: var(--cyan);
+}
+
+.scene__speaker {
+  margin: 0 0 calc(var(--px) * 2);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.scene__speaker[data-speaker="narrator"] { color: var(--ghost); }
+.scene__speaker[data-speaker="alex"],
+.scene__speaker[data-speaker="alex_dm"],
+.scene__speaker[data-speaker="alex_internal"] { color: var(--cyan); }
+.scene__speaker[data-speaker="mira"],
+.scene__speaker[data-speaker="mira_dm"],
+.scene__speaker[data-speaker="mira_post"],
+.scene__speaker[data-speaker="mira_pinned"] { color: var(--pink); }
+
+.scene__text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--cyan);
+  min-height: 4.5em;
+  word-break: break-word;
 }
 
 .scene__choices {
@@ -138,39 +164,217 @@
   gap: calc(var(--px) * 2);
 }
 
-.scene__placeholder {
-  margin: auto;
-  padding: calc(var(--px) * 6);
-  text-align: center;
-  color: var(--ghost);
-  font-size: 12px;
-  line-height: 1.8;
-  max-width: 40ch;
+.scene__choice {
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  padding: calc(var(--px) * 3) calc(var(--px) * 4);
+  line-height: 1.7;
+  font-size: 11px;
+  display: flex;
+  gap: calc(var(--px) * 2);
+  align-items: baseline;
 }
 
-.scene__placeholder code {
+.scene__choice-num {
+  color: var(--amber);
+  flex: 0 0 auto;
+}
+
+.scene__choice-label {
+  flex: 1 1 auto;
+  color: inherit;
+}
+
+.scene__hint {
+  margin: 0 calc(var(--px) * 3) calc(var(--px) * 2);
+  text-align: right;
+  font-size: 9px;
+  color: var(--ghost);
+  letter-spacing: 0.06em;
+}
+
+/* ===================================================================== */
+/* Ending view                                                           */
+/* ===================================================================== */
+
+.ending {
+  flex: 1;
+  position: relative;
+  border: var(--border) solid var(--pink);
+  background: var(--navy);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 3);
+  padding: calc(var(--px) * 4);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.ending__stage {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 180px;
+  border: var(--border) solid var(--cyan);
+  overflow: hidden;
+  background: var(--navy);
+}
+
+.ending__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.ending__bg[src=""],
+.ending__bg.is-hidden {
+  display: none;
+}
+
+.ending__char {
+  position: absolute;
+  right: 6%;
+  bottom: 0;
+  max-height: 80%;
+  width: auto;
+  z-index: 1;
+}
+
+.ending__char[src=""],
+.ending__char.is-hidden {
+  display: none;
+}
+
+.ending__title {
+  margin: 0;
+  font-size: 16px;
+  color: var(--amber);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ending__text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--cyan);
+  min-height: 6em;
+  word-break: break-word;
+}
+
+.ending__takeaway {
+  margin: 0;
+  padding: calc(var(--px) * 3);
+  border-left: var(--border) solid var(--pink);
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--pink);
+  font-style: italic;
+}
+
+.ending__actions {
+  margin-top: auto;
+  display: flex;
+  gap: calc(var(--px) * 3);
+}
+
+.ending__hint {
+  margin: 0;
+  text-align: right;
+  font-size: 9px;
+  color: var(--ghost);
+  letter-spacing: 0.06em;
+}
+
+/* ===================================================================== */
+/* Developer scene-jumper panel                                          */
+/* ===================================================================== */
+
+.dev-jumper {
+  position: fixed;
+  bottom: calc(var(--px) * 3);
+  right: calc(var(--px) * 3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--px) * 2);
+  padding: calc(var(--px) * 2) calc(var(--px) * 3);
+  background: var(--navy);
+  border: var(--border) solid var(--amber);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  font-size: 9px;
+  color: var(--amber);
+  letter-spacing: 0.08em;
+}
+
+.dev-jumper__tag {
+  color: var(--amber);
+  font-weight: bold;
+}
+
+.dev-jumper__select {
+  background: var(--navy);
+  color: var(--cyan);
+  border: var(--border) solid var(--cyan);
+  font-family: inherit;
+  font-size: 10px;
+  padding: calc(var(--px)) calc(var(--px) * 2);
+}
+
+.dev-jumper__btn {
+  display: inline-block;
+  padding: calc(var(--px)) calc(var(--px) * 3);
+  border: var(--border) solid var(--amber);
+  background: var(--navy);
   color: var(--amber);
   font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
 }
 
-/* --------------------------------------------------------------------- */
+.dev-jumper__btn:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.dev-jumper__btn:active {
+  transform: translate(calc(var(--px) / 2), calc(var(--px) / 2));
+  box-shadow: none;
+}
+
+/* ===================================================================== */
 /* Narrow viewports — stay usable down to 375px per .cursorrules.        */
-/* --------------------------------------------------------------------- */
+/* ===================================================================== */
 
 @media (max-width: 480px) {
   body { padding: calc(var(--px) * 2); }
-  .title__logo    { font-size: 28px; }
+  .title__logo     { font-size: 28px; }
   .title__subtitle { font-size: 10px; }
-  .title__tagline { font-size: 9px; }
-  .scene { min-height: 360px; }
+  .title__tagline  { font-size: 9px; }
+  .scene,
+  .ending          { min-height: 420px; }
+  .scene__text,
+  .ending__text    { font-size: 11px; }
+  .scene__choice   { font-size: 10px; padding: calc(var(--px) * 2) calc(var(--px) * 3); }
+  .dev-jumper      { font-size: 8px; right: calc(var(--px) * 2); bottom: calc(var(--px) * 2); }
 }
 
-/* Honour reduced-motion: nothing in Slice A animates, but the primitives
-   above are written so nothing *needs* to animate to be legible. */
+/* Reduced-motion: the typewriter respects this at the JS layer already;
+   here we also strip the (future) caret blink and any transitions. */
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .btn:hover,
-  .btn:active {
+  .btn:active,
+  .dev-jumper__btn,
+  .dev-jumper__btn:hover,
+  .dev-jumper__btn:active {
     transition: none;
   }
 }

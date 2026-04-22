@@ -15,62 +15,38 @@
 
 **Goal.** Opening `index.html` shows a pixel-styled "SUBSCRIBED" title screen with working Start + About buttons. Start (click or Enter) swaps to a placeholder scene view.
 
+---
+
+## SLICE B — Story data + engine with dev jumper
+
+- **status:** DONE (2026-04-22)
+- **commit:** see `docs/INTEGRATION_LOG.md` (second entry)
+- **files touched:** `src/story.js`, `src/state.js`, `src/engine.js`, `src/main.js`, `src/ui/sceneView.js`, `src/ui/endingView.js` (new), `src/ui/devJumper.js` (new), `styles/scene.css`, `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+**Goal.** Every scene S1–S9 and ending E1–E7 is reachable via the engine. Starting from the title screen reaches any ending by walking a branch. A dev-mode jumper (enabled via `localStorage.setItem('dev','true')`) can teleport to any scene id directly.
+
 **Acceptance (all met).**
-- [x] `npx serve .` or opening `index.html` directly renders the title screen.
-- [x] Title uses Press Start 2P (loaded via Google Fonts `<link>`).
-- [x] Clicking Start swaps to the scene-view placeholder.
-- [x] Enter anywhere on the title screen also starts.
-- [x] No console errors on boot or on Start (the engine stubs log *warnings* on intentional invocation — those are expected and document the Slice-C wiring gap).
+- [x] `Object.keys(STORY)` = 16, matching `[S1..S9, E1..E7]`.
+- [x] Every `choice.next` resolves to a STORY key; no dangling pointers.
+- [x] BFS from `S1` reaches 15/16 scenes. **S9 is a known orphan** under the user's flowchart pick (S4.D3 → E5); it remains defined and reachable via the dev jumper. The runtime BFS at the bottom of `src/story.js` only fires under the `dev` flag and logs `"[story] reachable from S1: 15/16 · orphans: S9"` as expected.
+- [x] Title → Start → S1 → click through a branch reaches an ending, which shows narration + takeaway + "Return to title".
+- [x] Dev jumper (bottom-right) lists every id; "Jump" calls `renderScene(id)` even from the title screen (main.js unmounts title first).
+- [x] `state.history` records every scene entered (preserves re-visits); `state.visitedScenes` dedupes.
+- [x] `typewriter()` respects `prefers-reduced-motion` (synchronous write) and returns a Promise with a `.skip()` method that jumps to the final text.
+- [x] 1 / 2 / 3 keys pick the matching choice; Enter / Space / click advances dialogue; clicking a choice button fires `onChoice`.
+- [x] No console errors on boot; only the dev-flag-gated `[story] reachable …` info log fires when the flag is enabled.
+- [x] `node --check` passes on every JS module; class-name cross-check (JS emits → CSS rules) clean.
+- [x] Verbatim spot-check across S1, S4, S7, E1, E5, S9 matches `docs/story_spec.md` byte-for-byte.
 
 ---
 
-## SLICE B — Populate `STORY` from `story_spec.md`
+## SLICE C — Visual polish and theme beats
 
 - **status:** TODO
-- **depends on:** Slice A
-- **files touched (planned):** `src/story.js`
-
-**Goal.** Replace `export const STORY = Object.freeze({})` with the 16 scene objects (S1–S9, E1–E7) keyed by scene id, shape per `docs/story_spec.md` and `docs/ORCHESTRATION.md` §3.1 (when re-introduced). All dialogue, choices, and ending epilogues transcribed verbatim from `docs/story_spec.md`. Whole object + every scene `Object.freeze`d.
-
-**Acceptance (planned).**
-- [ ] `Object.keys(STORY).sort()` deep-equals `["E1","E2","E3","E4","E5","E6","E7","S1","S2","S3","S4","S5","S6","S7","S8","S9"]`.
-- [ ] Every scene has `id`, `title`, `background`, `character`, `characterPose`, `dialogue`, `choices`.
-- [ ] Every non-ending scene has `choices.length >= 1` and every `choice.next` resolves to a STORY key.
-- [ ] Every ending (`E1`–`E7`, `S9`) has `ending: true`, `choices.length === 0`, `epilogue.length > 0`.
-- [ ] BFS from `S1` following `choice.next` reaches all 16 keys.
-- [ ] `node --check src/story.js` passes.
-- [ ] No paraphrasing — spec dialogue lands byte-for-byte.
-
----
-
-## SLICE C — Wire engine, scene renderer, typewriter, keybindings
-
-- **status:** TODO
-- **depends on:** Slice A, Slice B
-- **files touched (planned):** `src/engine.js`, `src/ui/sceneView.js`, `src/main.js`, possibly new `src/ui/typewriter.js`
-
-**Goal.** Pressing Start on the title screen now enters `S1`, types the first dialogue line at ~30ms/char, lets the player advance with Click / Enter / Space, and renders choice buttons with 1/2/3 keyboard shortcuts. Transitions advance through the full tree; endings show their epilogue screen.
-
-**Acceptance (planned).**
-- [ ] `startGame()` (or equivalent) enters `S1` from `src/main.js` after title's onStart.
-- [ ] Typewriter ~30ms/char; click-through completes current line; second advance moves to next line.
-- [ ] `prefers-reduced-motion: reduce` prints full lines instantly.
-- [ ] 1/2/3 pick the corresponding choice; Enter/Space advances; Esc toggles pause.
-- [ ] Every choice's `next` transitions to the target scene.
-- [ ] Ending scenes display their epilogue and stop accepting advances.
-- [ ] Empty-dialogue ending scenes still reach `showEnding()` (guard against the known engine edge case).
-- [ ] No direct DOM writes in `engine.js`; all DOM code lives in `src/ui/*`.
-- [ ] Zero `innerHTML` assignments with story-derived strings.
-
----
-
-## SLICE D — Visual polish and theme beats
-
-- **status:** TODO
-- **depends on:** Slice C
+- **depends on:** Slice B
 - **files touched (planned):** `styles/scene.css`, `styles/main.css`, possibly `src/ui/sceneView.js`
 
-**Goal.** The scene reads as pixel-art and not as a wireframe. Dialogue-box caret blinks. Choice buttons have the pressed state from `.cursorrules`. S4's "glitch at final line" beat fires via `.scene[data-scene="S4"].is-final-line .scene__char` per `docs/story_spec.md` §Appendix. Warm/cool palette leans apply per scene (S3 `--pink`, S5 `--ghost`, S7 `--amber`).
+**Goal.** The scene reads as pixel-art and not as a wireframe. Caret blink on dialogue. Choice buttons have the pressed state from `.cursorrules`. S4's "glitch at final line" beat fires via `.scene[data-scene-id="S4"].is-final-line .scene__char` per `docs/story_spec.md` §S4 atmosphere. Palette leans apply per scene (S3 `--pink`, S5 `--ghost`, S7 `--amber`).
 
 **Acceptance (planned).**
 - [ ] Caret blink animation (paused under `prefers-reduced-motion`).
@@ -78,29 +54,49 @@
 - [ ] S4 sprite flicker fires once on entering the last dialogue line; no flicker on other scenes.
 - [ ] Palette leans verified visually at S3, S4, S5, S7, S9.
 - [ ] No ad-hoc hex values anywhere — palette tokens only.
+- [ ] Pause overlay (Esc) shipped with a dismissible themed panel.
+
+Note: Slice C used to be titled "wire engine, scene renderer, typewriter, keybindings" — all of that landed in Slice B, so the former Slice C contents are now closed. Slice C in this document is the *new* Slice C (visual polish + pause).
 
 ---
 
-## SLICE E — Background + character art
+## SLICE D — Background + character art
 
 - **status:** TODO
-- **depends on:** none (can run in parallel with D once Slice C lands)
-- **files touched (planned):** `assets/bg/*.png`, `assets/chars/mira.png`, possibly `src/story.js` (path updates)
+- **depends on:** none (can run in parallel with C once C is underway)
+- **files touched (planned):** `assets/bg_*.png` × 9, `assets/mira_*.png` × 4 poses, possibly `src/story.js` (sprite path swaps)
 
-**Goal.** The nine backgrounds named in `docs/story_spec.md` Appendix exist as pixel-art PNGs. Mira's sprite exists with `idle` / `happy` / `sad` / `glitch` poses (can be one sprite + CSS filter variations if drawing four poses is out of scope).
+**Goal.** The nine backgrounds named in `src/story.js` exist as pixel-art PNGs. Mira's sprite exists with `idle` / `happy` / `sad` / `glitch` poses (can be one sprite + CSS filter variations if drawing four poses is out of scope).
 
 **Acceptance (planned).**
-- [ ] `ls assets/bg/` shows nine PNGs matching spec filenames.
-- [ ] `assets/chars/mira.png` exists.
+- [ ] `assets/bg_bedroom_night.png`, `bedroom_night_after`, `phone_browser`, `phone_dm`, `phone_dm_warm`, `phone_dm_cool`, `phone_dm_idle`, `phone_dm_late`, `phone_dm_bleary` all exist as pixel PNGs.
+- [ ] A Mira sprite exists (one file or per-pose) and `story.js` swaps off the Alex-`//TODO(slice-e)` stand-ins.
 - [ ] Every scene loads its background and sprite without a broken-image icon.
 - [ ] Assets are pixel-art consistent (no blurry scale-ups, no anti-aliased edges).
 
 ---
 
+## SLICE E — Classroom build polish
+
+- **status:** TODO
+- **depends on:** C + D
+
+**Goal.** The build is presentable on the classroom projector: full-screen layout at the projector's native resolution, font self-hosted so `file://` without network still reads pixel-art, smoke for reduced-motion, and a short operator runbook in `README.md`.
+
+**Acceptance (planned).**
+- [ ] Press Start 2P available at `assets/fonts/` with a font-face declaration in `main.css`.
+- [ ] Manual check at the projector resolution the class uses (confirm before presentation day).
+- [ ] Reduced-motion end-to-end (typewriter skips, caret blink removed) confirmed.
+- [ ] README §"Running on presentation day" added.
+
+---
+
 ## Follow-up backlog (not yet scheduled into slices)
 
-- Pause overlay (Esc) — currently not implemented at all.
-- Restart / return-to-title affordance from an ending screen.
-- `scripts/validate-story.mjs` — node-runnable static check of STORY invariants (BFS, every choice.next resolves, every ending has epilogue). Helpful once Slice B lands.
-- Classroom build checklist: font fallback confirmed without network; reduced-motion smoke; full-screen check on the presentation machine's resolution.
-- About modal — currently a `window.alert`. Replace with a dismissable overlay in the same pixel theme.
+- **About modal** — currently a `window.alert` in `titleScreen.js`. Replace with a dismissible themed overlay.
+- **Return-to-title from inside a scene** — only reachable after an ending today. Consider exposing via Esc once the pause overlay lands in Slice C.
+- **S9 orphan vs. S9 removed** — the user's flowchart pick (S4.D3 → E5) makes S9 unreachable from S1. If the flowchart ever reverts to the spec (S4.D3 → S9), update `src/story.js` and the reachability expectation in the log at the bottom of that file.
+- **S9 takeaway** — left empty (`''`) per spec. If a CCHU9015 one-liner is authored, drop it into `STORY.S9.takeaway`.
+- **`scripts/validate-story.mjs`** — the runtime dev-flag BFS in `story.js` is dev-only. A standalone node-runnable validator (same invariants: keys equal expected set, every `next` resolves, reachable set matches expectation) would catch data drift in CI/pre-commit.
+- **Pose atlas** — Slice D will need `happy` / `sad` / `glitch` / `idle` distinguishable. Decide whether to draw four sprites or one sprite + CSS filter variations.
+- **Audio** — spec doesn't require sound; consider a single ambient bed track and a keypress SFX, both optional.

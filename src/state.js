@@ -1,45 +1,69 @@
 /**
  * @file src/state.js — run-time game state for "Subscribed".
  *
- * A deliberately tiny module. The state it holds is the *minimum* every
- * slice after A will need: which scene the player is on and the path
- * they took to get there. The shape may grow (e.g. pause flag, tip
- * counter) but new fields should carry a one-line comment explaining
- * the theme/mechanic they support — the state surface is the piece's
- * model of "what the transaction has cost so far."
+ * A deliberately tiny module. The shape it holds is the *minimum* the
+ * engine and UI need to render the current scene and reconstruct how
+ * the player arrived: which scene is on screen, the ordered path taken,
+ * and the deduplicated set of scenes visited. Reads are tolerated from
+ * anywhere; writes should funnel through `recordVisit()` (from the
+ * engine) or `reset()` (from main.js on a return-to-title).
  *
- * Slice A exposes `state` as a plain object so UI modules can read from
- * it directly; reads are tolerated, writes should go through the
- * helpers below (or through the engine, once it exists in Slice C).
+ * The piece's theme is transactional intimacy; `history` and
+ * `visitedScenes` are the model of "what the transaction has cost so
+ * far" and can be surfaced in a future epilogue / credits screen.
  */
 
-/** @type {{currentSceneId: (string|null), history: string[]}} */
+/**
+ * @typedef {Object} GameState
+ * @property {string|null} currentSceneId  SceneId currently on screen, null pre-start.
+ * @property {string[]}    history         Ordered sequence of scene ids visited (may repeat).
+ * @property {Set<string>} visitedScenes   Deduplicated set of scene ids visited so far.
+ */
+
+/** @type {GameState} */
 export const state = {
-  /** SceneId currently on screen, or null before startGame() runs. */
   currentSceneId: null,
-  /** Ordered list of scene ids visited, oldest first. */
   history: [],
+  visitedScenes: new Set(),
 };
 
 /**
- * Reset the game to its pre-start condition. Called by the title screen
- * on mount (so returning to title via a future "back to menu" action
- * starts cleanly), and by any future "restart" affordance.
+ * Reset to pre-start condition. Called by main.js on a return-to-title
+ * and on the initial boot. Does not itself render; the caller decides
+ * what to show next (typically the title, and from there the player
+ * chooses to re-enter S1).
  * @returns {void}
  */
 export function reset() {
   state.currentSceneId = null;
   state.history.length = 0;
+  state.visitedScenes.clear();
 }
 
 /**
- * Record that the player has entered a scene. Keeps the history in
- * sync with `currentSceneId`. Engine will call this from `renderScene`
- * once Slice C lands; Slice A's placeholder does not yet call it.
+ * Record that the player has just entered a scene. The engine calls
+ * this from `renderScene()` before the view is mounted, so the state
+ * and the DOM agree on the current scene even if the view mount
+ * throws partway through.
+ *
+ * `history` preserves revisits (e.g. S5 → S4 → S5 shows up twice);
+ * `visitedScenes` is deduped so UI can cheaply ask "have we been here?"
+ *
+ * @param {string} sceneId
+ * @returns {void}
+ */
+export function recordVisit(sceneId) {
+  state.currentSceneId = sceneId;
+  state.history.push(sceneId);
+  state.visitedScenes.add(sceneId);
+}
+
+/**
+ * @deprecated since Slice B — kept as an alias so any lingering Slice-A
+ * import sites continue to compile. New code should call `recordVisit()`.
  * @param {string} sceneId
  * @returns {void}
  */
 export function enterScene(sceneId) {
-  state.currentSceneId = sceneId;
-  state.history.push(sceneId);
+  recordVisit(sceneId);
 }
