@@ -13,7 +13,8 @@
  *       id:         'S1',
  *       type:       'scene',
  *       title:      'The Scroll',
- *       background: 'assets/bg_*.png',
+ *       background: 'assets/bg_*.png'
+ *                 | { desktop: 'assets/bg_*_desktop.png', mobile: 'assets/bg_*_phone.png' },
  *       character:  { sprite: 'assets/...png', position: 'center', pose: 'idle' } | null,
  *       dialogue:   [ { speaker, text, note? }, ... ],
  *       choices:    [ { id, label, next }, ... ],
@@ -49,9 +50,9 @@
  *    Per-character `position` drives bottom-aligned placement via a
  *    data-attribute → CSS rule in sceneView / scene.css.
  *  - **Background filenames** use the flatter `assets/bg_<slug>.png`
- *    naming. All five scene backgrounds are authored for Slice E:
- *    bedroom_night, phone_browser preview, dm_chat (shared by most of
- *    the DM scenes), scene7_split, and the shared ending card.
+ *    naming. Scene backgrounds may now be either a single path or a
+ *    viewport-aware `{ desktop, mobile }` object when phone framing
+ *    needs different art from desktop.
  *  - **Quotes** are straight ASCII everywhere. Em-dashes (U+2014) are
  *    preserved verbatim because the spec uses them.
  *  - **S9** is typed as `'ending'` per `story_spec.md`'s engine note
@@ -63,6 +64,7 @@
 /** @typedef {'narrator'|'alex'|'alex_dm'|'alex_internal'|'mira'|'mira_dm'|'mira_post'|'mira_pinned'} SpeakerId */
 /** @typedef {{ speaker: SpeakerId, text: string, note?: string }} Line */
 /** @typedef {{ id: string, label: string, next: string }} Choice */
+/** @typedef {string|{desktop?: string, mobile?: string, default?: string}} BackgroundAsset */
 /** @typedef {{ sprite: string, position: 'left'|'center'|'right', pose: 'idle'|'happy'|'sad'|'glitch' }} Character */
 
 /** @type {Readonly<Record<string, any>>} */
@@ -92,7 +94,11 @@ export const STORY = {
     id: 'S2',
     type: 'scene',
     title: 'The Window Shopper',
-    background: 'assets/bg_scene2_preview.png',
+    background: {
+      desktop: 'assets/bg_scene2_preview_desktop.png',
+      mobile: 'assets/bg_scene2_preview_phone.png',
+      default: 'assets/bg_scene2_preview.png',
+    },
     backgroundAlt: "A creator's subscription page preview on a phone browser, subscribe button prominent",
     // No character sprite — the phone UI is the scene. Per task spec.
     character: null,
@@ -111,7 +117,11 @@ export const STORY = {
     id: 'S3',
     type: 'scene',
     title: 'The First Message',
-    background: 'assets/bg_dm_chat.png',
+    background: {
+      desktop: 'assets/bg_dm_chat_desktop.png',
+      mobile: 'assets/bg_dm_chat_phone.png',
+      default: 'assets/bg_dm_chat.png',
+    },
     backgroundAlt: 'Direct message chat interface on a phone screen',
     character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'happy', alt: 'Mira smiling warmly and waving at the camera' },
     dialogue: [
@@ -130,7 +140,11 @@ export const STORY = {
     id: 'S4',
     type: 'scene',
     title: 'The Bond Deepens',
-    background: 'assets/bg_dm_chat.png',
+    background: {
+      desktop: 'assets/bg_dm_chat_desktop.png',
+      mobile: 'assets/bg_dm_chat_phone.png',
+      default: 'assets/bg_dm_chat.png',
+    },
     backgroundAlt: 'Direct message chat interface on a phone screen',
     // Pose stays 'happy' through the first two lines; the scene root
     // picks up `.is-final-line` on the third dialogue entry, which
@@ -154,7 +168,11 @@ export const STORY = {
     id: 'S5',
     type: 'scene',
     title: 'The Transactional User',
-    background: 'assets/bg_dm_chat.png',
+    background: {
+      desktop: 'assets/bg_dm_chat_desktop.png',
+      mobile: 'assets/bg_dm_chat_phone.png',
+      default: 'assets/bg_dm_chat.png',
+    },
     backgroundAlt: 'Direct message chat interface on a phone screen',
     // S5 palette lean in scene.css drops char opacity to 0.6 so the
     // selfie reads as "performed for anyone" rather than "performed
@@ -175,7 +193,11 @@ export const STORY = {
     id: 'S6',
     type: 'scene',
     title: 'The Guarded One',
-    background: 'assets/bg_dm_chat.png',
+    background: {
+      desktop: 'assets/bg_dm_chat_desktop.png',
+      mobile: 'assets/bg_dm_chat_phone.png',
+      default: 'assets/bg_dm_chat.png',
+    },
     backgroundAlt: 'Direct message chat interface on a phone screen',
     character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'idle', alt: 'Mira waving gently, expression soft and non-pressuring' },
     dialogue: [
@@ -216,7 +238,11 @@ export const STORY = {
     id: 'S8',
     type: 'scene',
     title: 'Willful Ignorance',
-    background: 'assets/bg_dm_chat.png',
+    background: {
+      desktop: 'assets/bg_dm_chat_desktop.png',
+      mobile: 'assets/bg_dm_chat_phone.png',
+      default: 'assets/bg_dm_chat.png',
+    },
     backgroundAlt: 'Direct message chat interface on a phone screen',
     character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'glitch', alt: 'Mira posing for a selfie, image slightly distorted as if glitching' },
     dialogue: [
@@ -234,7 +260,11 @@ export const STORY = {
     id: 'S9',
     type: 'ending',
     title: 'The Wounded Exit',
-    background: 'assets/bg_dm_chat.png',
+    background: {
+      desktop: 'assets/bg_dm_chat_desktop.png',
+      mobile: 'assets/bg_dm_chat_phone.png',
+      default: 'assets/bg_dm_chat.png',
+    },
     backgroundAlt: 'Direct message chat interface — documentation only, not rendered',
     // S9 is typed as 'ending' so endingView renders it with the
     // shared bg_endings.png card; the `background` field here is

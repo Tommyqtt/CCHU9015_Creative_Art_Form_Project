@@ -160,6 +160,20 @@
   z-index: 1;
 }
 
+.scene__char-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.scene__overlay {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Placeholder tile sits behind the <img> at z-index 0. When the
    asset loads, the img (z-index 1) covers it. When the img fails
    and we set `.is-hidden`, the tile is revealed — a solid navy
@@ -612,11 +626,11 @@
 /* Slice G — Mobile stack layout (<768px)                                */
 /* ===================================================================== */
 
-/* On phone-sized viewports the scene stacks vertically, but the split is
-   content-driven rather than a hard 50/50 cut: the dialogue / choices take
-   their natural height and the stage uses the remaining space. That keeps
-   DM-chat scenes from looking oversized on short lines while still leaving
-   enough room for longer dialogue beats. Fixed-position chrome (progress
+/* On phone-sized viewports we keep the desktop-style layering model: the
+   stage stays rigid and fills the whole scene, while dialogue / choices sit
+   at the bottom and grow upward over it. That keeps the background crop
+   stable as text length changes, while the character sprite remains an
+   independent overlay above the bottom UI. Fixed-position chrome (progress
    dots, audio toggle, pause overlay) is unaffected — those are viewport-
    anchored. */
 
@@ -632,42 +646,46 @@
     margin: 0;
   }
 
-  /* Scene: full viewport height. The stage above should absorb spare space
-     so the dialogue / choices / hint cluster stays pinned to the bottom. */
+  /* Scene: full viewport height with bottom-anchored UI over a rigid stage. */
   .scene {
     height: 100svh;
     min-height: 0;
-    justify-content: flex-start;
+    justify-content: flex-end;
     border-left: none;
     border-right: none;
     border-radius: 0;
     box-shadow: none;
   }
 
-  /* Stage: use whatever height remains after dialogue/choices render. Keep
-     a floor so the art stays readable, but no ceiling — otherwise spare
-     viewport height pools underneath the bottom UI instead of above it. */
+  /* Stage: rigid background-only layer, so text growth never changes
+     the background framing. */
   .scene__stage {
-    position: relative;
-    inset: auto;
-    z-index: auto;
-    flex: 1 1 0;
-    min-height: clamp(calc(var(--px) * 44), 34svh, calc(var(--px) * 64));
+    position: absolute;
+    inset: 0;
+    z-index: 1;
     overflow: hidden;
   }
 
-  /* Char sprite scales with the now-dynamic stage height. */
+  /* Character stays independently layered over the rigid background and can
+     visually rise behind the bottom dialogue panel. */
   .scene__char {
-    height: 48%;
-    max-height: none;
+    height: 52svh;
+    max-height: calc(100% - calc(var(--px) * 18));
   }
   .scene__char[data-position="left"]  { left:  5%; }
   .scene__char[data-position="right"] { right: 5%; }
 
-  /* Dialogue + choices keep their natural height; only scroll when a long
-     line or many options would otherwise starve the stage below its floor. */
+  /* Bottom UI becomes a true overlay so the background stage never changes
+     size or position as text grows. */
+  .scene__overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+  }
+
   .scene__dialogue {
-    flex: 0 0 auto;
     overflow-y: auto;
     margin: calc(var(--px) * 2);
     min-height: calc(var(--px) * 18);
@@ -675,7 +693,6 @@
   }
 
   .scene__choices {
-    flex: 0 0 auto;
     overflow-y: auto;
     max-height: 22svh;
     margin: 0 calc(var(--px) * 2) calc(var(--px) * 2);
@@ -982,26 +999,6 @@
   color: var(--ghost);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-/* Credits panel inside pause overlay — toggled by the Credits button.
-   `.is-hidden` hides it; removing that class reveals a tight block of
-   ghost-coloured lines before the hint. */
-.pause-overlay__credits {
-  width: 100%;
-  padding: calc(var(--px) * 3);
-  border: 2px solid var(--ghost);
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--px));
-}
-
-.pause-overlay__credits-line {
-  margin: 0;
-  font-size: 9px;
-  color: var(--ghost);
-  letter-spacing: 0.06em;
-  line-height: 1.6;
 }
 
 /* ===================================================================== */

@@ -7,14 +7,16 @@
  *       <img class="scene__bg" />
  *       <img class="scene__char" />
  *     </div>
- *     <section class="scene__dialogue" aria-live="polite">
- *       <p class="scene__speaker" data-speaker="..."></p>
- *       <p class="scene__text"></p>
- *     </section>
- *     <section class="scene__choices" aria-label="Choices">
- *       <button class="btn scene__choice">1. label</button> ...
- *     </section>
- *     <p class="scene__hint">Click or press Enter / Space to continue.</p>
+ *     <div class="scene__overlay">
+ *       <section class="scene__dialogue" aria-live="polite">
+ *         <p class="scene__speaker" data-speaker="..."></p>
+ *         <p class="scene__text"></p>
+ *       </section>
+ *       <section class="scene__choices" aria-label="Choices">
+ *         <button class="btn scene__choice">1. label</button> ...
+ *       </section>
+ *       <p class="scene__hint">Click or press Enter / Space to continue.</p>
+ *     </div>
  *   </main>
  *
  * Interaction model:
@@ -49,6 +51,27 @@ const SPEAKER_LABELS = {
   mira_post:     'Mira (post)',
   mira_pinned:   'Mira (pinned post)',
 };
+
+const MOBILE_BG_QUERY = '(max-width: 767px)';
+
+/**
+ * Resolve a background asset from either a single path string or a
+ * viewport-aware descriptor object.
+ * @param {string|{desktop?: string, mobile?: string, default?: string}|null|undefined} asset
+ * @param {boolean} isMobile
+ * @returns {string}
+ */
+function resolveBackgroundAsset(asset, isMobile) {
+  if (typeof asset === 'string') return asset;
+  if (!asset || typeof asset !== 'object') return '';
+
+  const desktop = typeof asset.desktop === 'string' ? asset.desktop : '';
+  const mobile  = typeof asset.mobile === 'string'  ? asset.mobile  : '';
+  const fallback = typeof asset.default === 'string' ? asset.default : '';
+
+  if (isMobile) return mobile || fallback || desktop;
+  return desktop || fallback || mobile;
+}
 
 /**
  * Build a speaker label, injecting an optional timing/modifier note
@@ -90,24 +113,60 @@ export function mountSceneView(root, scene, ctx) {
   const stage = document.createElement('div');
   stage.className = 'scene__stage';
 
+  const charLayer = document.createElement('div');
+  charLayer.className = 'scene__char-layer';
+
   // Placeholder tiles sit behind the <img> tags. When the asset loads,
   // the img fully covers them (same `position: absolute; inset: 0`).
   // When the asset 404s, we set `.is-hidden` on the img, revealing the
   // placeholder — a solid navy tile with the asset path as a ghost-
   // coloured label so the operator can see which file is missing at a
   // glance. Lets Slice C ship before Slice D/E deliver real art.
-  const bgPath = typeof scene.background === 'string' ? scene.background : '';
+  const bgMediaQuery = (typeof window !== 'undefined' && typeof window.matchMedia === 'function')
+    ? window.matchMedia(MOBILE_BG_QUERY)
+    : null;
   const bgPlaceholder = document.createElement('div');
   bgPlaceholder.className = 'scene__bg-placeholder';
   bgPlaceholder.setAttribute('aria-hidden', 'true');
-  bgPlaceholder.textContent = bgPath || '(no background)';
+  bgPlaceholder.textContent = '(no background)';
 
   const bg = document.createElement('img');
   bg.className = 'scene__bg';
-  bg.src = bgPath;
   bg.alt = typeof scene.backgroundAlt === 'string' ? scene.backgroundAlt : '';
-  bg.addEventListener('load',  () => { bgPlaceholder.classList.add('is-hidden'); });
-  bg.addEventListener('error', () => { bg.classList.add('is-hidden'); });
+  let activeBgPath = '';
+  bg.addEventListener('load', () => {
+    bg.classList.remove('is-hidden');
+    bgPlaceholder.classList.add('is-hidden');
+  });
+  bg.addEventListener('error', () => {
+    bg.classList.add('is-hidden');
+    bgPlaceholder.classList.remove('is-hidden');
+  });
+
+  /**
+   * Apply the correct background for the current viewport width. The
+   * placeholder text mirrors the selected asset path so missing-file
+   * debugging still works when desktop and phone use different art.
+   * @returns {void}
+   */
+  function syncBackgroundAsset() {
+    const bgPath = resolveBackgroundAsset(scene.background, bgMediaQuery?.matches === true);
+    bgPlaceholder.textContent = bgPath || '(no background)';
+    if (!bgPath) {
+      activeBgPath = '';
+      bgPlaceholder.classList.remove('is-hidden');
+      bg.removeAttribute('src');
+      bg.classList.add('is-hidden');
+      return;
+    }
+    if (bgPath === activeBgPath) return;
+    activeBgPath = bgPath;
+    bgPlaceholder.classList.remove('is-hidden');
+    bg.classList.remove('is-hidden');
+    bg.src = bgPath;
+  }
+
+  syncBackgroundAsset();
 
   stage.append(bgPlaceholder, bg);
 
@@ -121,7 +180,6 @@ export function mountSceneView(root, scene, ctx) {
     const charEl = document.createElement('img');
     charEl.className = 'scene__char';
     charEl.alt = typeof scene.character.alt === 'string' ? scene.character.alt : '';
-    charEl.src = charPath;
     charEl.dataset.pose = scene.character.pose ?? 'idle';
     charEl.dataset.position = scene.character.position ?? 'center';
     // Char sprite is positioned differently from its placeholder tile
@@ -131,8 +189,12 @@ export function mountSceneView(root, scene, ctx) {
     // placeholder visible.
     charEl.addEventListener('load',  () => { charPlaceholder.classList.add('is-hidden'); });
     charEl.addEventListener('error', () => { charEl.classList.add('is-hidden'); });
+    charEl.src = charPath;
+    if (charEl.complete && charEl.naturalWidth > 0) {
+      charPlaceholder.classList.add('is-hidden');
+    }
 
-    stage.append(charPlaceholder, charEl);
+    charLayer.append(charPlaceholder, charEl);
   }
 
   const dialogueEl = document.createElement('section');
@@ -155,7 +217,11 @@ export function mountSceneView(root, scene, ctx) {
   hintEl.className = 'scene__hint';
   hintEl.textContent = 'Click or press Enter / Space to continue.';
 
-  sceneEl.append(stage, dialogueEl, choicesEl, hintEl);
+  const overlayEl = document.createElement('div');
+  overlayEl.className = 'scene__overlay';
+  overlayEl.append(dialogueEl, choicesEl, hintEl);
+
+  sceneEl.append(stage, charLayer, overlayEl);
   root.appendChild(sceneEl);
 
   // --- state -----------------------------------------------------------
@@ -357,9 +423,25 @@ export function mountSceneView(root, scene, ctx) {
     showChoices();
   }
 
+  const onBackgroundViewportChange = () => syncBackgroundAsset();
+  if (bgMediaQuery) {
+    if (typeof bgMediaQuery.addEventListener === 'function') {
+      bgMediaQuery.addEventListener('change', onBackgroundViewportChange);
+    } else if (typeof bgMediaQuery.addListener === 'function') {
+      bgMediaQuery.addListener(onBackgroundViewportChange);
+    }
+  }
+
   return {
     unmount() {
       document.removeEventListener('keydown', onKey);
+      if (bgMediaQuery) {
+        if (typeof bgMediaQuery.removeEventListener === 'function') {
+          bgMediaQuery.removeEventListener('change', onBackgroundViewportChange);
+        } else if (typeof bgMediaQuery.removeListener === 'function') {
+          bgMediaQuery.removeListener(onBackgroundViewportChange);
+        }
+      }
       if (typingHandle && typeof typingHandle.skip === 'function') typingHandle.skip();
       typingHandle = null;
       while (root.firstChild) root.removeChild(root.firstChild);

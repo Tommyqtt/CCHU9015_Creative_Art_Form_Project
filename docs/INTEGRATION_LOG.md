@@ -292,3 +292,27 @@
 ---
 
 <!-- Next slice appends below. -->
+## 2026-04-23T11:45:00Z — Slice H: QA all-green + deployment prep
+- **files changed:**
+  `docs/QA_REPORT.md` **(new)** — final QA matrix covering all 10 intended routes, all 3 loopbacks, console/network/perf notes,
+  `LICENSE` **(new)** — MIT license text,
+  `404.html` **(new)** — redirect back to `index.html#title` for GitHub Pages fallback,
+  `index.html` — add Open Graph tags (`og:title`, `og:description`, `og:image`, `og:type`),
+  `README.md` — rewrite as release-facing project readme with placeholders for screenshot, group members, and live demo URL,
+  `src/ui/sceneView.js` — fix character placeholder race for cached images by attaching listeners before `src` assignment and handling already-complete images,
+  `src/ui/pauseOverlay.js`, `styles/scene.css`, `src/ui/titleScreen.js` — remove pause-menu credits UI and related copy/styling so the live app and docs match the new no-credits direction,
+  `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+- **tests:**
+  - Full route sweep: all 10 intended routes reached their expected endings ✓
+  - Loopbacks: `S5 -> S4`, `S6 -> S4`, `S8 -> S7`, ending Replay -> title ✓
+  - Browser console: no uncaught app errors; only Cursor browser automation warnings about native-dialog overrides ✓
+  - Network sweep across exercised paths: no broken assets observed; exercised requests returned `200` ✓
+  - CPU profile across restart/start/transition churn: effectively idle (`99.7%` idle, `0.3%` active samples), no obvious runaway listener/timer behaviour ✓
+  - `node --check` on modified JS modules (`sceneView.js`, `pauseOverlay.js`, `titleScreen.js`) ✓
+  - `ReadLints` on modified files: clean ✓
+
+- **notes / blockers:**
+  - `gh` is not installed in the local shell, so automated GitHub repo creation could not be executed from this environment.
+  - The repository already has an `origin` remote pointing at a different GitHub repository. Creating/pushing the requested public repo `subscribed-cchu9015` requires a manual remote decision before release.
+  - `README.md` intentionally carries placeholders for group-member names and the final GitHub Pages URL; `index.html` points `og:image` at `assets/social-preview.png`, which still needs the final screenshot asset to make social previews render correctly.

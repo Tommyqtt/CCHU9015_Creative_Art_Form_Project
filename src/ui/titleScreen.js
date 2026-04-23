@@ -35,7 +35,7 @@ export function mountTitleScreen(root, handlers) {
           'Subscribed\n\n' +
           'A narrative piece on parasocial intimacy and the\n' +
           'transactional shape of modern online connection.\n\n' +
-          'Credits & sources — see docs/story_spec.md.\n' +
+          'Sources — see docs/story_spec.md.\n' +
           'HKU CCHU9015, 2026.',
         );
       };

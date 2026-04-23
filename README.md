@@ -1,95 +1,58 @@
 # Subscribed
 
-A web-based 2D pixel-art interactive narrative game. A single player walks
-one path through the life of **Alex**, a lonely 28-year-old who subscribes
-to a cosplay creator's paid DMs and discovers — slowly, or not at all —
-that the warmth on the other end is partly staffed. The piece dramatises
-parasocial relationships, digital intimacy, and the transactional shape of
-modern online connection.
+**Subscribed** is a browser-based pixel-art interactive narrative about
+parasocial intimacy, loneliness, and the transactional shape of online
+connection. The player follows Alex through one branching story about a paid
+creator relationship that can feel comforting, manipulative, or both.
 
-Built as coursework for **HKU CCHU9015 — Sex and Intimacy in Modern Times**
-(Creative Art Form Presentation). Played once through in class; polish and
-atmosphere matter more than replayability.
+Built for **HKU CCHU9015 — Sex and Intimacy in Modern Times** as a Creative
+Art Form Presentation.
 
----
+## Live demo
 
-## Run it
+- GitHub Pages: `TODO after deploy`
 
-No install step. No build step. Two ways to play:
+## Screenshot
+
+- `TODO: add gameplay screenshot`
+- `TODO: add ending screen screenshot`
+
+## How to run
+
+No install step and no build step.
 
 ```bash
-# 1. Direct in browser — opens via file://
+# Open directly
 open index.html
 
-# 2. Or serve locally (recommended if your browser blocks ES modules on file://)
+# Or serve locally
 npx serve .
 ```
 
-Targets latest Chrome, Safari, and Firefox. Desktop-first, usable down to
-~375px viewport width.
+Targets latest Chrome, Safari, and Firefox. The game is desktop-first and
+remains usable down to about `375px` width.
 
-## Controls
+## How to play
 
-- **Click / Enter / Space** — advance dialogue, press the current button.
-- **1 / 2 / 3** — pick the corresponding choice (available once the scene
-  renderer lands in Slice C).
-- **Esc** — pause (available once the pause overlay lands).
+- `Click`, `Enter`, or `Space`: advance dialogue or activate the focused button
+- `1`, `2`, `3`: choose the matching branch option
+- `Esc`: open or close the pause menu
+- `R`: restart to the title screen
+- `M`: toggle audio
 
-## Tech
+## Project notes
 
-- Pure HTML5 + CSS3 + vanilla JavaScript (ES6 modules).
-- No frameworks, no bundlers, no TypeScript, no CSS preprocessors.
-- Only external resource: **Press Start 2P** via Google Fonts.
-
-See [`.cursorrules`](./.cursorrules) for the full non-negotiable rule set.
-
-## Palette
-
-```
---navy  #0f1020  deep background
---cyan  #6ee7ff  phone-glow, primary UI
---pink  #ff6fb5  creator / romance accent
---amber #ffb347  warning / money
---ghost #7a7f9a  muted, distant, silence
-```
-
-## Project layout
-
-```
-index.html           entry point
-styles/
-  reset.css          minimal reset
-  main.css           palette + typography + shared primitives
-  scene.css          title + scene layout
-src/
-  main.js            app entry, mounts screens
-  story.js           STORY data (populated in Slice B)
-  engine.js          scene state machine (fleshed out in Slice C)
-  state.js           run-time game state
-  ui/
-    titleScreen.js   "SUBSCRIBED" title card
-    sceneView.js     placeholder scene view
-docs/
-  story_spec.md      narrative source of truth
-  TASKS.md           work ledger
-  INTEGRATION_LOG.md merge log
-  HANDOVER_NOTE.md   current-state snapshot
-assets/              character sprites and (future) backgrounds
-```
-
-## Status
-
-Slice A shipped — scaffold + title screen. The rest is planned in
-[`docs/TASKS.md`](docs/TASKS.md).
+- Pure `HTML`, `CSS`, and vanilla `JavaScript` ES modules
+- No framework, bundler, or TypeScript
+- Story data lives in `src/story.js`
+- QA results live in `docs/QA_REPORT.md`
 
 ## Credits
 
-- **Story, code, visual direction:** coursework author, HKU 2026.
-- **Typeface:** *Press Start 2P* by CodeMan38, served via Google Fonts.
-- **Tree diagram + script sources:** `docs/story line tree diagram.png`,
-  `docs/script.pptx`. Authored additions (e.g. ending epilogues, creator
-  name "Mira") are flagged in `docs/story_spec.md`.
+- Group members: `TODO add names`
+- Course: `CCHU9015 — Sex and Intimacy in Modern Times`
+- Project materials: `docs/story_spec.md`, `docs/story line tree diagram.png`, `docs/script.pptx`
 
 ## License
 
-Coursework submission. Not yet licensed for redistribution.
+Released under the `MIT` License. See `LICENSE`.

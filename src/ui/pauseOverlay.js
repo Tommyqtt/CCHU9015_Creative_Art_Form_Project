@@ -2,10 +2,9 @@
  * @file src/ui/pauseOverlay.js — modal pause overlay for "Subscribed".
  *
  * Summoned by the engine when the player presses Esc (or the global R/M
- * shortcuts bypass it). Offers four actions:
+ * shortcuts bypass it). Offers three actions:
  *   - Resume (Close) → dismiss the overlay, return focus to the scene.
  *   - Mute / Unmute  → toggle audio; label stays in sync via onMuteChange.
- *   - Credits        → toggle an inline credits panel inside the overlay.
  *   - Restart        → unmount the overlay + active view, re-mount title.
  *
  * Structure:
@@ -15,10 +14,8 @@
  *       <div class="pause-overlay__actions">
  *         <button>Resume</button>
  *         <button aria-pressed="…">Mute Audio / Unmute Audio</button>
- *         <button aria-expanded="…">Credits</button>
  *         <button>Restart</button>
  *       </div>
- *       <div class="pause-overlay__credits is-hidden">…</div>
  *       <p class="pause-overlay__hint">Press Esc to resume.</p>
  *     </div>
  *   </div>
@@ -94,39 +91,6 @@ export function mountPauseOverlay(root, handlers) {
   });
   const offMuteChange = onMuteChange(renderMuteBtn);
 
-  // --- Credits toggle ---
-  const creditsBtn = document.createElement('button');
-  creditsBtn.type = 'button';
-  creditsBtn.className = 'btn pause-overlay__btn';
-  creditsBtn.textContent = 'Credits';
-  creditsBtn.setAttribute('aria-expanded', 'false');
-  creditsBtn.setAttribute('aria-controls', 'pause-credits-panel');
-
-  const creditsPanel = document.createElement('div');
-  creditsPanel.className = 'pause-overlay__credits is-hidden';
-  creditsPanel.id = 'pause-credits-panel';
-
-  const creditsLines = [
-    'Subscribed — HKU CCHU9015, 2026',
-    'A narrative piece on parasocial intimacy.',
-    '',
-    'Writing & design: student team',
-    'Pixel art: hand-authored in this project',
-    'Audio: Web Audio API synthesis',
-    'No external dependencies.',
-  ];
-  creditsLines.forEach((line) => {
-    const p = document.createElement('p');
-    p.className = 'pause-overlay__credits-line';
-    p.textContent = line || ' '; // nbsp for blank lines
-    creditsPanel.appendChild(p);
-  });
-
-  creditsBtn.addEventListener('click', () => {
-    const hidden = creditsPanel.classList.toggle('is-hidden');
-    creditsBtn.setAttribute('aria-expanded', String(!hidden));
-  });
-
   // --- Restart ---
   const restartBtn = document.createElement('button');
   restartBtn.type = 'button';
@@ -134,13 +98,13 @@ export function mountPauseOverlay(root, handlers) {
   restartBtn.textContent = 'Restart';
   restartBtn.addEventListener('click', () => onReturnToTitle());
 
-  actionsEl.append(resumeBtn, muteBtn, creditsBtn, restartBtn);
+  actionsEl.append(resumeBtn, muteBtn, restartBtn);
 
   const hint = document.createElement('p');
   hint.className = 'pause-overlay__hint';
   hint.textContent = 'Press Esc to resume.';
 
-  panel.append(titleEl, actionsEl, creditsPanel, hint);
+  panel.append(titleEl, actionsEl, hint);
   overlay.appendChild(panel);
 
   // --- Backdrop dismiss ---

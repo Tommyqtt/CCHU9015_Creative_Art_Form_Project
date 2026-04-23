@@ -2,7 +2,7 @@
 
 > Single-file snapshot of current project state. **Overwritten at the end of every slice.** If you are resuming this project, read this first, then `docs/TASKS.md` and the latest block of `docs/INTEGRATION_LOG.md`.
 
-**Last updated:** 2026-04-23, end of Slice G (responsive layout + full accessibility pass).
+**Last updated:** 2026-04-23, during Slice H (QA all-green locally, deployment prep done, GitHub publish still pending).
 
 ---
 
@@ -12,7 +12,7 @@
 
 ## Current branch
 
-`main`. Working tree clean after the Slice G commit. Last nine code commits (most recent first):
+`main`. Working tree is **not clean**: Slice H QA/deployment-prep edits are present but not yet committed. Last nine code commits on `main` (most recent first):
 - `feat(slice-g): responsive layout + full a11y pass`
 - `feat(slice-f): audio + transitions + scene 7 drama`
 - `fix(slice-e): stop stage from being pushed up by typing dialogue`
@@ -26,26 +26,26 @@
 ## What exists on `main`
 
 - **Rules & specs:** `.cursorrules`, `CLAUDE.md`, `docs/story_spec.md`, `docs/story line tree diagram.png`, `docs/script.pptx`.
-- **Entry + CSS:** `index.html`, `styles/reset.css`, `styles/main.css`, `styles/scene.css`.
+- **Entry + CSS:** `index.html`, `404.html`, `styles/reset.css`, `styles/main.css`, `styles/scene.css`.
 - **Source (12 modules):**
   - `src/main.js` — boots on `DOMContentLoaded`, owns the title lifecycle, installs the engine lazily on first start. Slice F added `bootSessionChrome()` (audio toggle + progress dots), `bootContentNote()` (first-launch modal), and `body.dataset.screen` flipping (`'title'` / `'story'`); also dispatches `state:reset` after reset so progress dots clear.
   - `src/state.js` — `state = { currentSceneId, history, visitedScenes: Set }`. Helpers: `reset()`, `recordVisit()`.
   - `src/story.js` — full 16-entry `STORY` (S1–S9 + E1–E7), deep-frozen. **Slice G added** `backgroundAlt` (descriptive alt for bg image) and `character.alt` (descriptive alt for sprite) to all 16 entries.
   - `src/engine.js` — `initEngine`, `renderScene`, `handleChoice`, `returnToTitle`, `typewriter`. Slice F: imports `playBlip` + `playTransition`; typewriter blips every 3rd char; `runTransition` fires whoosh; `renderScene` adds `.is-s7-entry` for 1000ms; dispatches `scene:rendered` CustomEvent. **Slice G added** `toggleMute` import; renamed `onEscKeydown` → `onGlobalKeydown` which also handles `R` (restart) and `M` (mute toggle) while a scene is mounted and no pause is open.
   - `src/audio.js` **(new in F)** — single AudioContext lazily built on first play call. `playBlip`, `playChoiceSound`, `playTransition`. Mute persists in localStorage. `onMuteChange` pub/sub. Tolerant of missing Web Audio and private-mode localStorage.
-  - `src/ui/titleScreen.js` — unchanged since Slice E (bg_title painting + icon_heart corners). Decorative images retain `aria-hidden`.
+  - `src/ui/titleScreen.js` — title card with `bg_title` + heart corners. Slice H trims the About copy from "Credits & sources" to "Sources".
   - `src/ui/sceneView.js` — **Slice G:** bg `alt` now reads from `scene.backgroundAlt`; char `alt` from `scene.character.alt`; both remove `aria-hidden`. Choice buttons gain `aria-label="Choice N: [label text]"`.
   - `src/ui/endingView.js` — **Slice G:** ending bg `alt` reads from `scene.backgroundAlt` (with fallback). Removed `aria-hidden` from bg.
   - `src/ui/devJumper.js` — unchanged since Slice B.
-  - `src/ui/pauseOverlay.js` — **Slice G rewrite:** 4 buttons (Resume, Mute/Unmute with live label, Credits toggle, Restart). Focus trap via Tab/Shift+Tab cycle within panel buttons. Credits panel is an inline `is-hidden` section toggled by the Credits button. `onMuteChange` subscription unsubscribed on unmount.
+  - `src/ui/pauseOverlay.js` — **Slice G rewrite:** 3 buttons (Resume, Mute/Unmute with live label, Restart). Focus trap via Tab/Shift+Tab cycle within panel buttons. `onMuteChange` subscription unsubscribed on unmount.
   - `src/ui/audioToggle.js` **(new in F)** — top-right mute button. `aria-pressed` + `aria-label` announce the action.
   - `src/ui/progressDots.js` **(new in F)** — fixed top-centre row of 9 hollow circles. Listens to `scene:rendered` + `state:reset`. Hidden on title.
   - `src/ui/contentNote.js` **(new in F)** — one-shot first-launch modal with consent gate.
 
 - **Slice G CSS additions:**
   - `styles/main.css` — desktop (≥1024px) letterbox block: body becomes flex host, `#app` gets `aspect-ratio: 16/9`, `max-width: 1600px`, `max-height: 900px`. Tablet (768–1023px) gutter tweak.
-  - `styles/scene.css` — mobile (<768px) stack block: `.scene__stage` becomes `position: relative; flex: 0 0 50%`, `.scene__char` scales to `40%`, choices `width: 100%`. Ending gets `height: 100svh`. Pause panel shrinks to full viewport width. Existing 480px block trimmed of now-redundant rules (min-height, char height, char positions, body padding). Credits panel CSS added.
-- **Docs:** `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md` (this file).
+  - `styles/scene.css` — mobile (<768px) stack block: `.scene__stage` becomes `position: relative; flex: 0 0 50%`, `.scene__char` scales to `40%`, choices `width: 100%`. Ending gets `height: 100svh`. Pause panel shrinks to full viewport width. Existing 480px block trimmed of now-redundant rules (min-height, char height, char positions, body padding).
+- **Docs:** `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md` (this file), `docs/QA_REPORT.md` **(new in Slice H)**.
 - **Assets (16 on disk, referenced by name in `src/story.js` or `src/ui/titleScreen.js`):**
   - **Alex:** `alex_neutral.png`, `alex_phone.png`, `alex_anxious.png`, `alex_defeated.png`
   - **Mira (creator):** `creator_wave.png`, `creator_selfie.png`, `creator_kiss.png`
@@ -71,6 +71,8 @@
 - **Per-scene palette leans.** S3 pink · S4 pink→amber · S5 ghost + 0.6 opacity · S7 amber · S9 ghost ending.
 - **Reduced motion.** Typewriter synchronous (no per-char blips), caret static, S4 glitch off, `.is-revealed` snaps, phone-glow off, transitions off, S7 entry stripped, dot transitions off, audio-toggle press transform off. Static palette leans retained. **Audio cues still fire** — user uses the mute toggle for silence (see "Sound is not motion" in INTEGRATION_LOG).
 - `npx serve .` and direct `file://` both continue to work.
+- **Slice H local QA.** `docs/QA_REPORT.md` records an all-green sweep across the 10 intended route-to-ending paths plus all required loopbacks. Console remained free of uncaught app errors, exercised assets returned `200`, and a quick CPU profile showed no obvious runaway timers/listeners.
+- **Deployment prep.** `LICENSE` (MIT), `404.html`, and Open Graph tags are in place. `README.md` has been rewritten for release, but still has placeholders for group-member names and the live demo URL.
 
 ## What's broken / blocked
 
@@ -79,6 +81,9 @@
 - **Ending ignores per-ending `scene.background`** — shared `bg_endings.png` by design.
 - **`chatter_single.png` is authored but unused.** Kept in `/assets/` for possible future re-spec.
 - **About modal** still a `window.alert`. Backlog.
+- **GitHub publication not done yet.** `gh` is unavailable in this shell and the repo already points at an existing `origin`, so the requested public repo creation / push / Pages enablement were not completed from this session.
+- **Social preview image is a placeholder.** `index.html` points `og:image` to `assets/social-preview.png`, which still needs the final screenshot asset added.
+- **README placeholders remain.** Group-member names and live demo URL still need to be filled in.
 - **Pause overlay has no focus trap.** Acceptable for classroom one-shot.
 - **No pause cue.** Esc opens/closes pause silently. Noted in INTEGRATION_LOG tech debt.
 - **No keyboard shortcut for mute.** Click-only. Backlog.
@@ -94,15 +99,13 @@
 
 ## Next planned slice
 
-**Slice G — Classroom build polish** (renamed from the old Slice E, then Slice F; see `docs/TASKS.md`).
+Finish the remaining Slice H release steps:
 
-1. Self-host Press Start 2P under `assets/fonts/` with `@font-face` in `main.css` so `file://` without network reads pixel-art.
-2. Manual smoke at the projector's resolution the class uses (confirm before presentation day).
-3. Reduced-motion end-to-end verification (typewriter, caret, S4 glitch, `.is-pressed`, `.is-revealed`, phone-glow, transitions, S7 drama, audio optional via mute toggle).
-4. Audio levels on the classroom projector's output — re-check blip / choice / whoosh peaks.
-5. README §"Running on presentation day" with operator runbook (including content-note reset: `localStorage.removeItem('content-note:seen')`).
-
-Do NOT start Slice G in parallel with re-touching F. One slice at a time.
+1. Decide whether to replace the current `origin` or add a new remote for `subscribed-cchu9015`.
+2. Create/push the public GitHub repo and enable GitHub Pages.
+3. Add the final social-preview screenshot at `assets/social-preview.png` or update `og:image`.
+4. Replace README placeholders for group-member names and live demo URL.
+5. Create the requested release commit and tag `v1.0.0`.
 
 ## Follow-ups discovered during Slice F
 
