@@ -131,6 +131,8 @@
 
 .scene {
   flex: 1;
+  width: 100%;
+  align-self: center;
   position: relative;
   border: var(--border) solid var(--cyan);
   background: var(--navy);
@@ -289,6 +291,8 @@
 }
 
 .scene__choices {
+  position: relative;
+  z-index: 4;
   margin: 0 calc(var(--px) * 3) calc(var(--px) * 3);
   display: flex;
   flex-direction: column;
@@ -318,6 +322,8 @@
 }
 
 .scene__hint {
+  position: relative;
+  z-index: 4;
   margin: 0 calc(var(--px) * 3) calc(var(--px) * 2);
   text-align: right;
   font-size: 9px;
@@ -589,19 +595,30 @@
   box-shadow: none;
 }
 
+/* On tablet/desktop, the outer `#app` owns the stage size via
+   `aspect-ratio`. The generic 520px fallback min-height on `.scene`
+   and `.ending` is useful for the unconstrained base layout, but once
+   `#app` is centered it becomes harmful: the mounted screen can force
+   itself taller than the frame after load, which is the "centered
+   first, then jumps upward" bug. Clear that floor for non-mobile. */
+@media (min-width: 768px) {
+  .scene,
+  .ending {
+    min-height: 0;
+  }
+}
+
 /* ===================================================================== */
 /* Slice G — Mobile stack layout (<768px)                                */
 /* ===================================================================== */
 
-/* On phone-sized viewports the overlay-stage + dialogue-at-bottom layout
-   squashes the character sprite against the text box. Instead we stack:
-     top 50%:    .scene__stage (bg + char sprite, relative-positioned)
-     bottom 50%: dialogue box + choices + hint (scrollable if needed)
-
-   Body padding is removed so the scene fills edge-to-edge. The .scene
-   itself becomes the full viewport so the stage can use `flex: 0 0 50%`
-   against a known height. Fixed-position chrome (progress dots, audio
-   toggle, pause overlay) is unaffected — those are viewport-anchored. */
+/* On phone-sized viewports the scene stacks vertically, but the split is
+   content-driven rather than a hard 50/50 cut: the dialogue / choices take
+   their natural height and the stage uses the remaining space. That keeps
+   DM-chat scenes from looking oversized on short lines while still leaving
+   enough room for longer dialogue beats. Fixed-position chrome (progress
+   dots, audio toggle, pause overlay) is unaffected — those are viewport-
+   anchored. */
 
 @media (max-width: 767px) {
   body {
@@ -615,7 +632,8 @@
     margin: 0;
   }
 
-  /* Scene: full viewport height; stack from top rather than bottom */
+  /* Scene: full viewport height. The stage above should absorb spare space
+     so the dialogue / choices / hint cluster stays pinned to the bottom. */
   .scene {
     height: 100svh;
     min-height: 0;
@@ -626,29 +644,41 @@
     box-shadow: none;
   }
 
-  /* Stage: leave absolute-position mode; become the top flex child */
+  /* Stage: use whatever height remains after dialogue/choices render. Keep
+     a floor so the art stays readable, but no ceiling — otherwise spare
+     viewport height pools underneath the bottom UI instead of above it. */
   .scene__stage {
     position: relative;
     inset: auto;
     z-index: auto;
-    flex: 0 0 50%;
+    flex: 1 1 0;
+    min-height: clamp(calc(var(--px) * 44), 34svh, calc(var(--px) * 64));
     overflow: hidden;
   }
 
-  /* Char sprite: scale to 40% of the stage height, stay bottom-anchored */
+  /* Char sprite scales with the now-dynamic stage height. */
   .scene__char {
-    height: 40%;
+    height: 48%;
     max-height: none;
   }
   .scene__char[data-position="left"]  { left:  5%; }
   .scene__char[data-position="right"] { right: 5%; }
 
-  /* Dialogue: expand to fill remaining space, allow internal scroll if
-     a very long line or many choices can't fit */
+  /* Dialogue + choices keep their natural height; only scroll when a long
+     line or many options would otherwise starve the stage below its floor. */
   .scene__dialogue {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     overflow-y: auto;
     margin: calc(var(--px) * 2);
+    min-height: calc(var(--px) * 18);
+    max-height: 32svh;
+  }
+
+  .scene__choices {
+    flex: 0 0 auto;
+    overflow-y: auto;
+    max-height: 22svh;
+    margin: 0 calc(var(--px) * 2) calc(var(--px) * 2);
   }
 
   /* Choices: full-width buttons so touch targets are as large as possible */
@@ -660,6 +690,17 @@
   .scene__hint {
     font-size: 8px;
     margin: 0 calc(var(--px) * 2) calc(var(--px) * 2);
+  }
+
+  /* DM-chat scenes already crop inside the portrait-friendly mobile stack.
+     Disable the desktop zoom so chat cards don't appear oversized. */
+  .scene[data-scene-id="S3"] .scene__bg,
+  .scene[data-scene-id="S4"] .scene__bg,
+  .scene[data-scene-id="S5"] .scene__bg,
+  .scene[data-scene-id="S6"] .scene__bg,
+  .scene[data-scene-id="S8"] .scene__bg {
+    transform: none;
+    object-position: center top;
   }
 
   /* Ending: min-height 0 so it fills the viewport via #app's 100svh */
@@ -835,6 +876,19 @@
 }
 .scene[data-scene-id="S5"] .scene__char {
   opacity: 0.6;
+}
+
+/* DM-chat scenes reuse a portrait background (`bg_dm_chat.png`) inside
+   a landscape stage. Apply a slight zoom and vertical nudge so the chat
+   bubbles read larger without exposing empty edges. */
+.scene[data-scene-id="S3"] .scene__bg,
+.scene[data-scene-id="S4"] .scene__bg,
+.scene[data-scene-id="S5"] .scene__bg,
+.scene[data-scene-id="S6"] .scene__bg,
+.scene[data-scene-id="S8"] .scene__bg {
+  transform: scale(1.14);
+  transform-origin: center center;
+  object-position: center 35%;
 }
 
 /* S7 — "held breath" — amber tint on the thread chrome. */
