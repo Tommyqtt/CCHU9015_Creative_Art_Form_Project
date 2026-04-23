@@ -53,6 +53,19 @@ let pauseHandle = null;
 let escInstalled = false;
 
 /**
+ * Half-duration of the scene transition. 150ms fade-out + 150ms fade-in
+ * = 300ms total per the Slice E acceptance spec. The DOM swap happens
+ * at the midpoint, fully behind a solid black overlay, so the reader
+ * never sees the old view's text evaporate mid-character.
+ */
+const TRANSITION_HALF_MS = 150;
+
+/** @type {HTMLDivElement|null} The overlay <div> lives on document.body across renders. */
+let transitionOverlay = null;
+/** Monotonic token so a fresh transition cancels an in-flight one. */
+let transitionToken = 0;
+
+/**
  * Register the engine with its DOM root and any host-level callbacks.
  * Safe to call more than once — subsequent calls replace the root and
  * re-install hooks. `main.js` calls this before the first `renderScene()`.
@@ -123,6 +136,59 @@ function closePause() {
 }
 
 /**
+ * Idempotently mount the transition overlay on document.body. The
+ * element is reused across scene changes — creating and destroying
+ * it every render would force layout twice per transition, and the
+ * browser only needs one fixed-position black div.
+ * @returns {HTMLDivElement}
+ */
+function ensureTransitionOverlay() {
+  if (transitionOverlay && transitionOverlay.isConnected) return transitionOverlay;
+  const el = document.createElement('div');
+  el.className = 'scene-transition';
+  el.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(el);
+  transitionOverlay = el;
+  return el;
+}
+
+/**
+ * Run `doSwap` behind a 300ms fade-to-black. Under
+ * `prefers-reduced-motion: reduce`, runs the swap synchronously so the
+ * reader gets an instant cut with no phantom delay.
+ *
+ * Cancellation: each call bumps `transitionToken`; stale timers (e.g.
+ * dev-jumper fired during a previous fade) check the token and bail
+ * without re-running the swap.
+ *
+ * @param {() => void} doSwap
+ * @returns {void}
+ */
+function runTransition(doSwap) {
+  const reducedMotion = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    doSwap();
+    return;
+  }
+  const overlay = ensureTransitionOverlay();
+  const token = ++transitionToken;
+  overlay.classList.add('is-active');
+  setTimeout(() => {
+    if (token !== transitionToken) return;
+    doSwap();
+    // Wait one frame so the new view's initial paint lands before we
+    // start fading back in — otherwise the first typewriter tick can
+    // show through the tail of the fade-out.
+    requestAnimationFrame(() => {
+      if (token !== transitionToken) return;
+      overlay.classList.remove('is-active');
+    });
+  }, TRANSITION_HALF_MS);
+}
+
+/**
  * Render the scene identified by `id`. Unmounts the previous view
  * (including removing any keyboard listeners it installed), records
  * the visit in `state`, then delegates to the scene or ending view
@@ -146,24 +212,27 @@ export function renderScene(id) {
   }
 
   // Any open pause overlay is stale the moment we switch scenes
-  // (e.g. dev jumper mid-pause); close it before rendering.
+  // (e.g. dev jumper mid-pause); close it before the fade starts so
+  // it doesn't flash through the transition.
   closePause();
 
-  if (currentScreen && typeof currentScreen.unmount === 'function') {
-    currentScreen.unmount();
-  }
-  currentScreen = null;
+  runTransition(() => {
+    if (currentScreen && typeof currentScreen.unmount === 'function') {
+      currentScreen.unmount();
+    }
+    currentScreen = null;
 
-  recordVisit(id);
+    recordVisit(id);
 
-  const ctx = {
-    onChoice: handleChoice,
-    onReturnToTitle: returnToTitle,
-  };
+    const ctx = {
+      onChoice: handleChoice,
+      onReturnToTitle: returnToTitle,
+    };
 
-  currentScreen = scene.type === 'ending'
-    ? mountEndingView(rootEl, scene, ctx)
-    : mountSceneView(rootEl, scene, ctx);
+    currentScreen = scene.type === 'ending'
+      ? mountEndingView(rootEl, scene, ctx)
+      : mountSceneView(rootEl, scene, ctx);
+  });
 }
 
 /**

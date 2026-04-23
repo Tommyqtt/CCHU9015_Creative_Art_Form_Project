@@ -61,33 +61,44 @@ Note: Slice C was originally titled "wire engine, scene renderer, typewriter, ke
 
 ---
 
-## SLICE D — Background + character art
+## SLICE D — Background + character art (asset authoring)
 
-- **status:** TODO
-- **depends on:** none (can run in parallel with C once C is underway)
-- **files touched (planned):** `assets/bg_*.png` × 9, `assets/mira_*.png` × 4 poses, possibly `src/story.js` (sprite path swaps)
-
-**Goal.** The nine backgrounds named in `src/story.js` exist as pixel-art PNGs. Mira's sprite exists with `idle` / `happy` / `sad` / `glitch` poses (can be one sprite + CSS filter variations if drawing four poses is out of scope).
-
-**Acceptance (planned).**
-- [ ] `assets/bg_bedroom_night.png`, `bedroom_night_after`, `phone_browser`, `phone_dm`, `phone_dm_warm`, `phone_dm_cool`, `phone_dm_idle`, `phone_dm_late`, `phone_dm_bleary` all exist as pixel PNGs.
-- [ ] A Mira sprite exists (one file or per-pose) and `story.js` swaps off the Alex-`//TODO(slice-e)` stand-ins.
-- [ ] Every scene loads its background and sprite without a broken-image icon.
-- [ ] Assets are pixel-art consistent (no blurry scale-ups, no anti-aliased edges).
+- **status:** DONE (2026-04-23) — folded into Slice E. All 16 PNGs (9 characters, 5 backgrounds, 2 optional) were authored before Slice E wired them, so there is no separate commit; the assets land in the same `feat(slice-e)` commit as the integration code.
+- **files landed:** `assets/alex_anxious.png`, `alex_defeated.png`, `creator_kiss.png`, `creator_selfie.png`, `creator_wave.png`, `chatter_single.png`, `chatter_trio.png`, `bg_dm_chat.png`, `bg_endings.png`, `bg_scene1_bedroom.png`, `bg_scene2_preview.png`, `bg_scene7_split.png`, `bg_title.png`, `icon_heart.png` (new); `alex_neutral.png`, `alex_phone.png` (replaced with final-quality versions).
+- Note: the original Slice D scope expected four Mira-specific poses. The final cast separates Mira's appearances into three creator sprites (`wave` / `selfie` / `kiss`) plus a `chatter_trio` overlay for the S7 reveal, which reads truer to the "inbox staffed in shifts" beat than a single performer in four moods.
 
 ---
 
-## SLICE E — Classroom build polish
+## SLICE E — Integrate all pixel-art assets
+
+- **status:** DONE (2026-04-23)
+- **commit:** see `docs/INTEGRATION_LOG.md` (most recent entry)
+- **files touched:** `src/story.js`, `src/engine.js`, `src/ui/titleScreen.js`, `styles/scene.css`, `assets/*.png` (see Slice D above), `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+**Goal.** Every scene and ending renders its authored pixel-art background + character sprite. Character sprites are placed according to a `left | center | right` position token; sprite height is 65vh on desktop, 50vh on narrow viewports. The title screen gains `bg_title.png` + two decorative `icon_heart.png` corner sprites. A 300ms fade-to-black wraps every `renderScene` DOM swap. S1 and S2 backgrounds get a subtle 2s phone-glow oscillation.
+
+**Acceptance (all met).**
+- [x] **STORY wiring.** `story.js` updated for S1 (`bg_scene1_bedroom` + `alex_phone` center), S2 (`bg_scene2_preview`, no character), S3/S6 (`bg_dm_chat` + `creator_wave` right), S4 (`bg_dm_chat` + `creator_kiss` right), S5/S8 (`bg_dm_chat` + `creator_selfie` right), S7 (`bg_scene7_split` + `chatter_trio` right overlay), S9 (`bg_dm_chat` + `alex_defeated` center). E1–E7 all use `bg_endings.png` (shared ending card; `endingView` ignores per-ending backgrounds by design).
+- [x] **Character positioning.** `sceneView.js` already emits `data-position` on the sprite `<img>`; new CSS rules anchor left at 15%, right at 15%, center via `left: 50%` + `translateX(-50%)`. Sprite height `65vh` desktop, `50vh` mobile; `max-height` clamps inside the stage so the sprite never overlaps the dialogue box.
+- [x] **Title screen.** `titleScreen.js` mounts `.title__bg` (`bg_title.png`, 0.32 opacity overlay) and two `.title__heart` corner sprites. Both have `error` handlers that hide the `<img>` on 404; the title card falls back to the Slice A navy layout unchanged.
+- [x] **Scene transitions.** `engine.js` adds `runTransition(doSwap)`: a single `.scene-transition` `<div>` fades in (150ms) → DOM swap → fades out (150ms) = 300ms total. `transitionToken` cancels stale transitions if a new `renderScene` fires during an in-flight fade. Under `prefers-reduced-motion: reduce`, `runTransition` short-circuits to a synchronous swap (no fade).
+- [x] **S1 / S2 phone-glow.** `@keyframes phone-glow` oscillates `filter: brightness(0.95 → 1.0)` over 2s, alternating. Scoped to `.scene[data-scene-id="S1"] .scene__bg` and `S2`. Reduced-motion strips the animation.
+- [x] **Placeholder fallback still works.** Slice C.2's load/error-driven placeholder system is untouched. Any future missing asset still renders as a labelled navy tile instead of a broken-image icon.
+- [x] **No regressions.** `node --check` on all 9 JS files: OK. Reachability invariant: 15/16 from S1 with S9 as the single expected orphan. Story asset-wiring validator (node eval) confirms all 17 assertions (9 BG + 8 char + 8 position).
+
+---
+
+## SLICE F — Classroom build polish (was Slice E)
 
 - **status:** TODO
-- **depends on:** C + D
+- **depends on:** E
 
 **Goal.** The build is presentable on the classroom projector: full-screen layout at the projector's native resolution, font self-hosted so `file://` without network still reads pixel-art, smoke for reduced-motion, and a short operator runbook in `README.md`.
 
 **Acceptance (planned).**
 - [ ] Press Start 2P available at `assets/fonts/` with a font-face declaration in `main.css`.
 - [ ] Manual check at the projector resolution the class uses (confirm before presentation day).
-- [ ] Reduced-motion end-to-end (typewriter skips, caret blink removed) confirmed.
+- [ ] Reduced-motion end-to-end (typewriter skips, caret blink removed, phone-glow frozen, scene transitions collapsed) confirmed.
 - [ ] README §"Running on presentation day" added.
 
 ---

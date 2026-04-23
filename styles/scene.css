@@ -17,6 +17,7 @@
 
 .title {
   flex: 1;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -24,6 +25,55 @@
   gap: calc(var(--px) * 6);
   text-align: center;
   padding: calc(var(--px) * 6) calc(var(--px) * 4);
+  overflow: hidden;
+}
+
+/* Slice E — pixel-art title painting. Sits behind everything at
+   reduced opacity so the melancholic navy base still dominates and
+   the logo text has enough contrast against Press Start 2P's hard
+   letterforms. If bg_title.png 404s, the <img> gets `.is-hidden`
+   and the title card falls back to flat navy. */
+.title__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.32;
+  z-index: 0;
+  pointer-events: none;
+}
+.title__bg.is-hidden { display: none; }
+
+/* Two decorative hearts pinned at opposite corners. Independent
+   error handlers means one-sided asset loss still looks intentional. */
+.title__hearts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.title__heart {
+  position: absolute;
+  width: calc(var(--px) * 12);
+  height: calc(var(--px) * 12);
+  opacity: 0.7;
+  filter: drop-shadow(var(--px) var(--px) 0 var(--navy));
+}
+.title__heart.is-hidden { display: none; }
+.title__heart--1 { top: calc(var(--px) * 8);     left: calc(var(--px) * 6); }
+.title__heart--2 { bottom: calc(var(--px) * 8);  right: calc(var(--px) * 6); }
+
+/* Stack the text + menu above bg + hearts. */
+.title__logo,
+.title__subtitle,
+.title__tagline,
+.title__menu,
+.title__hint,
+.title__course {
+  position: relative;
+  z-index: 2;
 }
 
 .title__logo {
@@ -150,13 +200,39 @@
   pointer-events: none;
 }
 
+/* Slice E — character sprites sit bottom-aligned in the stage, with
+   position driven by the `data-position` attribute that sceneView.js
+   copies off `scene.character.position`.
+
+   Spec: sprite height = 65vh on desktop. We cap with `max-height:
+   calc(100% - calc(var(--px) * 22))` so the sprite can never overlap
+   the dialogue box (which has min-height 22 * --px). `object-fit:
+   contain` keeps the source pixel ratio intact while the sprite
+   scales down on narrow viewports. */
 .scene__char {
   position: absolute;
-  right: 6%;
   bottom: 0;
-  max-height: 70%;
+  height: 65vh;
+  max-height: calc(100% - calc(var(--px) * 22));
   width: auto;
+  object-fit: contain;
   z-index: 3;
+}
+
+.scene__char[data-position="left"]   { left:  15%; right: auto; }
+.scene__char[data-position="right"]  { right: 15%; left:  auto; }
+/* Center is the default when no data-position is present or when
+   authored as 'center'. translateX(-50%) self-centers without
+   needing to know the sprite's intrinsic width. Note: the S4 glitch
+   animation below sets its own `transform` on `.scene__char`, which
+   overrides this centering for the duration of the keyframe. S4's
+   sprite is right-positioned, so that conflict never lands in the
+   live story. */
+.scene__char[data-position="center"],
+.scene__char:not([data-position]) {
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
 }
 
 .scene__char[src=""],
@@ -521,6 +597,14 @@
   .ending__action  { min-width: 0; }
   .scene__choice   { font-size: 10px; padding: calc(var(--px) * 2) calc(var(--px) * 3); }
   .dev-jumper      { font-size: 8px; right: calc(var(--px) * 2); bottom: calc(var(--px) * 2); }
+  /* Slice E: on narrow viewports the 65vh sprite eats the dialogue
+     box. Cap to 50vh and pull left/right anchors in a little. */
+  .scene__char {
+    height: 50vh;
+  }
+  .scene__char[data-position="left"]  { left:  8%; }
+  .scene__char[data-position="right"] { right: 8%; }
+  .title__heart { width: calc(var(--px) * 8); height: calc(var(--px) * 8); }
 }
 
 /* ===================================================================== */
@@ -759,6 +843,48 @@
 }
 
 /* ===================================================================== */
+/* Slice E — scene transition overlay                                    */
+/* ===================================================================== */
+
+/* A single fixed-position black <div> that fades in and out around
+   each `engine.renderScene` DOM swap. The engine toggles `.is-active`
+   at the midpoint; CSS does the 150ms opacity transition on either
+   side for a total 300ms fade. z-index sits above the dev jumper and
+   pause overlay so a mid-pause jump looks correct too. */
+.scene-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.scene-transition.is-active {
+  opacity: 1;
+}
+
+/* ===================================================================== */
+/* Slice E — S1 / S2 phone-glow ambient                                   */
+/* ===================================================================== */
+
+/* "Subtle 2-frame CSS animation oscillating background brightness
+   0.95–1.0 at 2s interval" per the Slice E acceptance spec. `alternate`
+   turns the 2-keyframe definition into an oscillator without needing
+   a symmetrical from→mid→to triple. Only applied to the scene <img>
+   so the dialogue chrome stays at full brightness. */
+.scene[data-scene-id="S1"] .scene__bg,
+.scene[data-scene-id="S2"] .scene__bg {
+  animation: phone-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes phone-glow {
+  from { filter: brightness(0.95); }
+  to   { filter: brightness(1.0);  }
+}
+
+/* ===================================================================== */
 /* Reduced-motion: strip the caret blink, glitch, and transitions.       */
 /* The typewriter already respects this at the JS layer.                 */
 /* ===================================================================== */
@@ -792,5 +918,20 @@
   .scene__choice:active,
   .scene__choice.is-pressed {
     transform: none;
+  }
+  /* Slice E: freeze phone-glow and collapse the scene transition so
+     the reader gets a clean cut between scenes. engine.js also short-
+     circuits the JS side of the transition under reduced-motion, so
+     the `.is-active` class is never toggled anyway — this rule is
+     belt-and-braces against a future code path adding it back. */
+  .scene[data-scene-id="S1"] .scene__bg,
+  .scene[data-scene-id="S2"] .scene__bg {
+    animation: none;
+  }
+  .scene-transition {
+    transition: none;
+  }
+  .scene-transition.is-active {
+    opacity: 0;
   }
 }

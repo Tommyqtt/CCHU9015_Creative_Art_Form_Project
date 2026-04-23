@@ -41,13 +41,17 @@
  *    S9 as an expected orphan.
  *  - **Choice ids** use the scene-prefixed scheme (`S1_1`, `S1_2`, ...)
  *    to avoid collision with scene ids.
- *  - **Character sprites** temporarily reuse the four existing Alex PNGs
- *    (`alex_phone`, `alex_neutral`, `alex_anxious`, `alex_defeated`) as
- *    stand-ins. Slice E will draw/replace with Mira variants. Each reuse
- *    is marked `// TODO(slice-e): ...` so the follow-up is greppable.
+ *  - **Character sprites** (Slice E): Alex is rendered as alex_phone /
+ *    alex_defeated in the bookend scenes. Mira is creator_wave (friendly
+ *    greeting), creator_selfie (performing), creator_kiss (intimate).
+ *    chatter_trio stands in for "the inbox-staff" on the S7 reveal per
+ *    the user's direction (bg_scene7_split already shows the split UI).
+ *    Per-character `position` drives bottom-aligned placement via a
+ *    data-attribute → CSS rule in sceneView / scene.css.
  *  - **Background filenames** use the flatter `assets/bg_<slug>.png`
- *    naming (not the spec's `assets/bg/<slug>.png` sub-folder). Files do
- *    not exist yet; CSS hides broken-image icons. Slice E unblocks.
+ *    naming. All five scene backgrounds are authored for Slice E:
+ *    bedroom_night, phone_browser preview, dm_chat (shared by most of
+ *    the DM scenes), scene7_split, and the shared ending card.
  *  - **Quotes** are straight ASCII everywhere. Em-dashes (U+2014) are
  *    preserved verbatim because the spec uses them.
  *  - **S9** is typed as `'ending'` per `story_spec.md`'s engine note
@@ -68,8 +72,7 @@ export const STORY = {
     id: 'S1',
     type: 'scene',
     title: 'The Scroll',
-    background: 'assets/bg_bedroom_night.png',
-    // TODO(slice-e): replace with Mira idle avatar per spec; Alex-on-phone is a stand-in.
+    background: 'assets/bg_scene1_bedroom.png',
     character: { sprite: 'assets/alex_phone.png', position: 'center', pose: 'idle' },
     dialogue: [
       { speaker: 'narrator',  text: "A creator he follows — someone whose cosplay content he's liked for months — posts a link." },
@@ -88,9 +91,9 @@ export const STORY = {
     id: 'S2',
     type: 'scene',
     title: 'The Window Shopper',
-    background: 'assets/bg_phone_browser.png',
-    // TODO(slice-e): Mira idle; Alex-on-phone stand-in.
-    character: { sprite: 'assets/alex_phone.png', position: 'center', pose: 'idle' },
+    background: 'assets/bg_scene2_preview.png',
+    // No character sprite — the phone UI is the scene. Per task spec.
+    character: null,
     dialogue: [
       { speaker: 'mira_pinned', text: "\"I reply to every DM within 24 hours. Tell me something about your day.\"" },
       { speaker: 'narrator',    text: "Alex stares at the subscribe button." },
@@ -106,9 +109,8 @@ export const STORY = {
     id: 'S3',
     type: 'scene',
     title: 'The First Message',
-    background: 'assets/bg_phone_dm.png',
-    // TODO(slice-e): Mira happy.
-    character: { sprite: 'assets/alex_neutral.png', position: 'center', pose: 'happy' },
+    background: 'assets/bg_dm_chat.png',
+    character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'happy' },
     dialogue: [
       { speaker: 'mira_dm',  text: "\"Hey Alex! Thanks for subbing. I saw you're into retro gaming from your Twitter. I just finished Chrono Trigger for the first time. What's your favorite?\"" },
       { speaker: 'narrator', text: "Alex is startled. She looked at his profile. She mentioned something specific. She asked him a real question." },
@@ -125,9 +127,11 @@ export const STORY = {
     id: 'S4',
     type: 'scene',
     title: 'The Bond Deepens',
-    background: 'assets/bg_phone_dm_warm.png',
-    // TODO(slice-e): Mira happy→glitch at final line; Alex-neutral stand-in for now.
-    character: { sprite: 'assets/alex_neutral.png', position: 'center', pose: 'happy' },
+    background: 'assets/bg_dm_chat.png',
+    // Pose stays 'happy' through the first two lines; the scene root
+    // picks up `.is-final-line` on the third dialogue entry, which
+    // keys the s4-glitch animation in scene.css on this sprite.
+    character: { sprite: 'assets/creator_kiss.png', position: 'right', pose: 'happy' },
     dialogue: [
       { speaker: 'narrator', text: "Over the next three weeks, Alex and Mira message daily. She remembers details. She sends voice notes saying she missed talking to him." },
       { speaker: 'narrator', text: "One night, Alex sends a vulnerable message about feeling isolated in his new city. The reply comes back in 8 seconds. At 2:17 AM." },
@@ -146,9 +150,11 @@ export const STORY = {
     id: 'S5',
     type: 'scene',
     title: 'The Transactional User',
-    background: 'assets/bg_phone_dm_cool.png',
-    // TODO(slice-e): Mira idle (reduced opacity per spec).
-    character: { sprite: 'assets/alex_neutral.png', position: 'center', pose: 'idle' },
+    background: 'assets/bg_dm_chat.png',
+    // S5 palette lean in scene.css drops char opacity to 0.6 so the
+    // selfie reads as "performed for anyone" rather than "performed
+    // for you".
+    character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'idle' },
     dialogue: [
       { speaker: 'narrator', text: "Alex keeps his messages brief. He asks about upcoming posts and rarely shares anything personal." },
       { speaker: 'narrator', text: "After two months, the content is still good. Without the emotional hook, it feels like just content. He can find similar content for free on Reddit." },
@@ -164,9 +170,8 @@ export const STORY = {
     id: 'S6',
     type: 'scene',
     title: 'The Guarded One',
-    background: 'assets/bg_phone_dm_idle.png',
-    // TODO(slice-e): Mira idle.
-    character: { sprite: 'assets/alex_neutral.png', position: 'center', pose: 'idle' },
+    background: 'assets/bg_dm_chat.png',
+    character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'idle' },
     dialogue: [
       { speaker: 'mira_dm',  text: "\"Hey, no pressure to reply. Just wanted to say I hope you're having a good week.\"" },
       { speaker: 'narrator', text: "Alex feels seen, even though he didn't ask for it. He appreciates that she didn't push." },
@@ -182,9 +187,11 @@ export const STORY = {
     id: 'S7',
     type: 'scene',
     title: 'The Confrontation',
-    background: 'assets/bg_phone_dm_late.png',
-    // TODO(slice-e): Mira sad.
-    character: { sprite: 'assets/alex_anxious.png', position: 'center', pose: 'sad' },
+    background: 'assets/bg_scene7_split.png',
+    // The split-screen background already shows the phone side and the
+    // team side; chatter_trio is layered on top as a subtle "there are
+    // more people here than you thought" overlay on the right half.
+    character: { sprite: 'assets/chatter_trio.png', position: 'right', pose: 'sad' },
     dialogue: [
       { speaker: 'alex_dm', text: "\"Are you real? Like, am I talking to you or someone else?\"" },
       { speaker: 'mira_dm', note: 'after 15 minutes', text: "\"I appreciate you asking. I use a small team to help manage messages so I can focus on creating content. But I review everything, and the connection is still real to me. I'm sorry if that wasn't clear.\"" },
@@ -202,9 +209,8 @@ export const STORY = {
     id: 'S8',
     type: 'scene',
     title: 'Willful Ignorance',
-    background: 'assets/bg_phone_dm_bleary.png',
-    // TODO(slice-e): Mira glitch.
-    character: { sprite: 'assets/alex_phone.png', position: 'center', pose: 'glitch' },
+    background: 'assets/bg_dm_chat.png',
+    character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'glitch' },
     dialogue: [
       { speaker: 'alex_internal', text: "\"The experience is good. Why ruin it?\"" },
       { speaker: 'narrator',      text: "He continues subscribing. He continues tipping. He continues feeling less lonely." },
@@ -220,8 +226,12 @@ export const STORY = {
     id: 'S9',
     type: 'ending',
     title: 'The Wounded Exit',
-    background: 'assets/bg_bedroom_night_after.png',
-    character: null,
+    background: 'assets/bg_dm_chat.png',
+    // S9 is typed as 'ending' so endingView renders it with the
+    // shared bg_endings.png card; the `background` field here is
+    // documentation only and is ignored by endingView. Alex shows up
+    // as a ghost-dim silhouette via the S9 palette lean.
+    character: { sprite: 'assets/alex_defeated.png', position: 'center', pose: 'sad' },
     narration: [
       { speaker: 'narrator',      text: "He closes the tab, then the app. The unsubscribe confirmation sits in his inbox for a week before he deletes it." },
       { speaker: 'alex_internal', text: "He can't decide whether the worst part is that he was fooled — or that for three weeks, being fooled had felt exactly like being known." },
@@ -230,11 +240,16 @@ export const STORY = {
   },
 
   // ===== E1 — The Skeptic ================================================
+  // All E* entries share assets/bg_endings.png as a deliberate design
+  // beat; endingView ignores per-ending `background` + `character`
+  // fields and renders the shared card with typewritten title +
+  // fade-in narration + takeaway. Fields are kept for completeness /
+  // future variants.
   E1: {
     id: 'E1',
     type: 'ending',
     title: 'The Skeptic',
-    background: 'assets/bg_bedroom_night.png',
+    background: 'assets/bg_endings.png',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He sets the phone face-down and doesn't check it again until morning. Nothing has changed about the apartment, or the weekend ahead, or the shape of Tuesday. He can't tell if he's proud of himself, or just unreachable." },
@@ -247,9 +262,8 @@ export const STORY = {
     id: 'E2',
     type: 'ending',
     title: 'The Rational Consumer',
-    background: 'assets/bg_phone_dm_cool.png',
-    // TODO(slice-e): Mira idle (scene echo of S5).
-    character: { sprite: 'assets/alex_neutral.png', position: 'center', pose: 'idle' },
+    background: 'assets/bg_endings.png',
+    character: null,
     narration: [
       { speaker: 'narrator', text: "He cancels the subscription the same way he cancels streaming services — two clicks, no farewell. The content was fine. It was always going to be fine. He just keeps forgetting that \"fine\" isn't what he was paying for." },
     ],
@@ -261,9 +275,8 @@ export const STORY = {
     id: 'E3',
     type: 'ending',
     title: 'The Silent Observer',
-    background: 'assets/bg_phone_browser.png',
-    // TODO(slice-e): Mira idle (scene echo of S2/S6).
-    character: { sprite: 'assets/alex_anxious.png', position: 'center', pose: 'idle' },
+    background: 'assets/bg_endings.png',
+    character: null,
     narration: [
       { speaker: 'narrator', text: "He watches for months without speaking. She never writes again. He tells himself this is the honest version of the arrangement — he pays, she performs, nobody pretends otherwise. The lie inside that is so small he almost doesn't notice it." },
     ],
@@ -275,9 +288,8 @@ export const STORY = {
     id: 'E4',
     type: 'ending',
     title: 'The Informed Realist',
-    background: 'assets/bg_phone_dm_late.png',
-    // TODO(slice-e): Mira sad (scene echo of S7).
-    character: { sprite: 'assets/alex_defeated.png', position: 'center', pose: 'sad' },
+    background: 'assets/bg_endings.png',
+    character: null,
     narration: [
       { speaker: 'narrator', text: "He stays. The messages come a little slower now, because he pays attention to them differently. He's made peace with knowing, which he didn't expect. Peace, he realises, is just disappointment you've had enough time to arrange." },
     ],
@@ -289,7 +301,7 @@ export const STORY = {
     id: 'E5',
     type: 'ending',
     title: 'The Betrayed',
-    background: 'assets/bg_bedroom_night_after.png',
+    background: 'assets/bg_endings.png',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He unsubscribes and feels the specific stupidity of having been moved by an inbox staffed in shifts. The anger cools into something worse within a day. He isn't angry at her, exactly — he's angry that the part of him that answered back was real." },
@@ -302,9 +314,8 @@ export const STORY = {
     id: 'E6',
     type: 'ending',
     title: 'The Verification Seeker',
-    background: 'assets/bg_phone_dm_late.png',
-    // TODO(slice-e): Mira sad (scene echo of S7).
-    character: { sprite: 'assets/alex_defeated.png', position: 'center', pose: 'sad' },
+    background: 'assets/bg_endings.png',
+    character: null,
     narration: [
       { speaker: 'narrator', text: "He sends the extra money before he can think about it. Whatever she does on the call, whatever is proved, he knows already what it will cost to need proof. He pays, and pays again, to be sure of something that used to be free." },
     ],
@@ -316,9 +327,8 @@ export const STORY = {
     id: 'E7',
     type: 'ending',
     title: 'The Happy Ignorant',
-    background: 'assets/bg_phone_dm_bleary.png',
-    // TODO(slice-e): Mira glitch (scene echo of S8).
-    character: { sprite: 'assets/alex_phone.png', position: 'center', pose: 'glitch' },
+    background: 'assets/bg_endings.png',
+    character: null,
     narration: [
       { speaker: 'narrator', text: "A year goes by. He's less lonely than he was. He doesn't ask the question, and the not-asking becomes a small muscle he's learned to keep flexed. Somewhere in the ledger, he knows, he is paying for the flexing too." },
     ],

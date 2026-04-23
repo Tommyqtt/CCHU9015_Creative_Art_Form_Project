@@ -148,4 +148,58 @@
 
 ---
 
+## 2026-04-23T14:00:00Z — chore(assets): remove scratch PNGs
+- **files changed:** deletes `assets/alex_neutral_clean.png`, `assets/image_clean.png`
+- **notes:** Both were ad-hoc scratch uploads from earlier iteration and were never referenced by `src/story.js` or any UI module. Dropped before Slice E's `feat` commit so the asset integration commit stays focused on the real 16 PNGs.
+
+---
+
+## 2026-04-23T14:30:00Z — Slice E: integrate pixel art assets
+- **files changed:**
+  `src/story.js`        (rewired every S1–S9 + E1–E7 entry off the Alex-stand-in sprites onto the real 16 PNGs; S1/S2 got their authored room / phone-UI backgrounds; S3/S4/S5/S6/S8/S9 share `bg_dm_chat.png`; S7 gets `bg_scene7_split.png` + `chatter_trio.png` right-overlay; E1–E7 all land on `bg_endings.png`; 13 `// TODO(slice-e)` comments removed),
+  `src/engine.js`       (added `ensureTransitionOverlay()`, `runTransition(doSwap)`, and `TRANSITION_HALF_MS = 150` — 300ms total fade-to-black via a reusable `.scene-transition` `<div>`; `renderScene` now delegates its unmount → recordVisit → mount sequence to `runTransition`; `transitionToken` cancels stale timers so dev-jumper spam doesn't re-mount a stale view; reduced-motion short-circuits to a synchronous swap),
+  `src/ui/titleScreen.js` (mounts `.title__bg` `<img>` (bg_title.png) + `.title__hearts` with two `.title__heart` corner sprites (icon_heart.png); each `<img>` has an `error` handler that self-hides so missing assets fall back to the Slice A navy title card unchanged),
+  `styles/scene.css`    (title card becomes `position: relative` + `overflow: hidden` to host bg + hearts with z-index layering; `.scene__char` positioning switched from fixed `right: 6%` / `max-height: 70%` to `data-position`-driven left 15% / center translateX / right 15% with `height: 65vh` + clamped `max-height`; added `.scene-transition` fixed overlay with 150ms opacity transition and `.is-active` class; added `@keyframes phone-glow` oscillating `filter: brightness(0.95 → 1.0)` at 2s alternate, scoped to S1/S2 `.scene__bg`; narrow-viewport `@media` caps sprite to 50vh and pulls left/right anchors to 8%; reduced-motion block extended to strip phone-glow and collapse the transition overlay),
+  `assets/*.png`        (14 new + 2 replaced — see "Slice D folded into E" block below),
+  `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+- **assets (Slice D folded into E):**
+  - **new:** `alex_anxious.png`, `alex_defeated.png`, `creator_wave.png`, `creator_selfie.png`, `creator_kiss.png`, `chatter_single.png`, `chatter_trio.png`, `bg_scene1_bedroom.png`, `bg_scene2_preview.png`, `bg_dm_chat.png`, `bg_scene7_split.png`, `bg_endings.png`, `bg_title.png`, `icon_heart.png`
+  - **replaced:** `alex_neutral.png`, `alex_phone.png` (final-quality versions; stand-ins from Slice B retired)
+  - `chatter_single.png` is unused by current `story.js` wiring but lands with its sibling `chatter_trio.png` for future authoring (e.g. a possible S6 re-spec).
+
+- **design choices:**
+  - **Per-scene sprite casting.** Mira appears as three separate creator sprites keyed to the emotional register of the beat: `creator_wave` for friendly-but-generic greetings (S3, S6), `creator_kiss` for intimate-and-warm (S4), `creator_selfie` for performed-and-opaque (S5, S8). `chatter_trio` stands in for the "I use a small team" reveal on S7 because the bg_scene7_split already paints the split-UI context; layering the trio on the right half reads as "more than one voice here" without adding a second sprite slot.
+  - **S9 as bedroom-ending variant.** S9's STORY entry is typed `ending`, so `endingView` renders it with the shared `bg_endings.png`. The `character` field is authored for completeness (`alex_defeated` center) but is ignored by the view — consistent with the existing "endingView ignores per-ending backgrounds and characters" design choice from Slice C.2.
+  - **All E1–E7 share `bg_endings.png`.** Per-ending narratives still differ (typed title + fade-in paragraph + takeaway), but the surface is the same — the "every ending is the same empty room after the event" beat. Slice C.2 already implemented the rendering side; Slice E just catches `story.js` up so the data agrees with the view.
+  - **`runTransition` uses a shared overlay across renders.** Creating and destroying the overlay per scene change would cost two layout passes per transition. Reusing one `<div>` appended to `document.body` keeps that at zero. The overlay sits at `z-index: 3000` — above the pause overlay (2000) and dev jumper (1000) — so even a mid-pause dev-jumper "Jump" looks clean.
+  - **`transitionToken` protects against stale swaps.** If the operator spams the dev jumper, the second `renderScene` cancels the first: both the `setTimeout` body (mid-transition) and the `requestAnimationFrame` body (fade-in) check the token and bail if a newer transition has started. The in-flight overlay just continues its CSS transition (it's already `.is-active`) — when the newer transition calls `overlay.classList.add('is-active')` it's idempotent; when that one's fade-in runs it removes the class exactly once.
+  - **Phone-glow as `filter: brightness()` rather than `opacity`.** `opacity` at <1.0 would reveal the placeholder tile behind the bg `<img>`; `filter: brightness()` keeps the image fully opaque while varying apparent luminance. Also survives the `prefers-reduced-motion` strip cleanly because CSS just removes the animation — no cleanup required.
+  - **Character positioning via `data-position` attribute + CSS, not inline styles.** The view just stamps the token from `scene.character.position` onto the `<img>`; all placement math lives in `styles/scene.css`. Keeps position tweaks a CSS-only change and makes the center `translateX(-50%)` rule explicit rather than implicit.
+  - **Title hearts use `drop-shadow(var(--px) var(--px) 0 var(--navy))`.** Single-pixel hard navy offset gives the icon the pixel-arcade "sticker on a CRT" beat without introducing blurry shadows.
+
+- **user-approved deviations:**
+  - **Original Slice D (background + character art + Mira four-pose sprite sheet)** did not happen as a standalone deliverable. Instead:
+    - All 14 required assets + 2 optional assets were authored before Slice E integration (no separate `chore(slice-d)` commit — asset authoring happens in the same `feat(slice-e)` commit as the wiring).
+    - Mira is split across three sprites (`wave` / `selfie` / `kiss`) with `chatter_trio` as the S7 reveal overlay, rather than one Mira sprite with four CSS-filter poses. TASKS.md Slice D section updated with a pointer to this deviation.
+  - **Previous "Slice E — Classroom build polish"** renamed to **Slice F**. No scope change to its acceptance criteria; just a numbering shuffle because the Slice E task was redefined mid-project to mean asset integration.
+
+- **tests:**
+  - `node --check` on all 9 JS modules ✓
+  - STORY asset-wiring validator (node eval against 9 BG + 8 char + 8 position assertions): all 25 checks passed ✓
+  - STORY reachability unchanged: 16 keys, BFS from S1 reaches 15/16, orphans `[S9]` ✓
+  - Asset file existence: `ls -la assets/` shows all 16 required PNGs on disk (no placeholders triggered on any authored scene) ✓
+  - Manual browser smoke (operator to run): title card shows bg_title painting with two hearts in corners; Start fades to black, fades back in with S1 (alex_phone centered in the bedroom, phone-glow ambient oscillating); walk to S7 and see chatter_trio appear on the right half of the split bg; final line of S4 still flickers with the glitch keyframe on top of creator_kiss; jump to any ending via dev jumper — bg_endings.png paints the full card beneath the typewritten title; Esc opens pause without interrupting phone-glow (ambient continues behind the overlay); toggle reduced-motion at the OS level + reload — cuts are instant, phone-glow frozen, typewriter synchronous.
+
+- **notes / tech debt:**
+  - **`chatter_single.png` is unreferenced** by the live story graph. Kept in `/assets/` for possible future use (e.g. an S6 re-spec that shows a single alt-voice reply). If a follow-up slice confirms it's dead, `git rm` it in a `chore(assets): …` commit.
+  - **`bg_title.png` is applied at 0.32 opacity.** Painting is dense enough at full brightness that 1.0 would wash out the "SUBSCRIBED" logo text shadow. If the final art is muted enough to stand at 1.0, raise the `opacity` value in `styles/scene.css`.
+  - **Phone-glow runs infinitely while the scene is mounted.** No explicit teardown — the animation stops when the `<img>` leaves the DOM via `sceneView.unmount()`. No memory leak; just noting for future slices that might want to pause ambient animation during the pause overlay.
+  - **S4 glitch transform interacts with centered sprites.** `@keyframes s4-glitch` sets `transform: translate(…)` on the full keyframe track, which would overwrite `translateX(-50%)` on a center-positioned sprite. S4 is right-positioned, so the conflict never lands today. If a future slice re-centers S4's sprite, either merge `translateX(-50%)` into each glitch keyframe or switch the centering strategy to `margin: 0 auto` on a known width.
+  - **Transition overlay covers the full viewport**, including anything outside `#app`. Any future HUD or always-visible UI element needs `z-index > 3000` if it should survive transitions — or the overlay selector needs to be scoped to `#app`.
+  - **No audible cue on scene change.** Transition is purely visual. A 200ms UI tick would help one-handed classroom play if Slice F decides to add audio.
+  - **Backlog carry-over:** About modal, `scripts/validate-story.mjs` standalone CI, self-hosted Press Start 2P — all remain open for Slice F.
+
+---
+
 <!-- Next slice appends below. -->

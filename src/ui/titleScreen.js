@@ -48,6 +48,33 @@ export function mountTitleScreen(root, handlers) {
   section.className = "title";
   section.setAttribute("aria-labelledby", "title-logo");
 
+  // Slice E: optional pixel-art background painting + decorative hearts.
+  // Both are progressive enhancements — if the asset 404s, the img gets
+  // `.is-hidden` and the plain navy title card (Slice A default) shows
+  // through unchanged. Mounted first so the rest of the copy stacks
+  // above them at a higher z-index (CSS handles the layering).
+  const bgImg = document.createElement("img");
+  bgImg.className = "title__bg";
+  bgImg.src = "assets/bg_title.png";
+  bgImg.alt = "";
+  bgImg.setAttribute("aria-hidden", "true");
+  bgImg.addEventListener("error", () => bgImg.classList.add("is-hidden"));
+
+  const hearts = document.createElement("div");
+  hearts.className = "title__hearts";
+  hearts.setAttribute("aria-hidden", "true");
+  // Two decorative heart sprites pinned at opposite corners. We mount
+  // both regardless of availability and let each error-handler hide
+  // its own img independently — one-sided failure still looks okay.
+  ["title__heart--1", "title__heart--2"].forEach((pos) => {
+    const heart = document.createElement("img");
+    heart.className = `title__heart ${pos}`;
+    heart.src = "assets/icon_heart.png";
+    heart.alt = "";
+    heart.addEventListener("error", () => heart.classList.add("is-hidden"));
+    hearts.appendChild(heart);
+  });
+
   const logo = document.createElement("h1");
   logo.className = "title__logo";
   logo.id = "title-logo";
@@ -91,7 +118,7 @@ export function mountTitleScreen(root, handlers) {
   course.className = "title__course";
   course.textContent = "HKU CCHU9015 — Sex and Intimacy in Modern Times";
 
-  section.append(logo, subtitle, tagline, menu, hint, course);
+  section.append(bgImg, hearts, logo, subtitle, tagline, menu, hint, course);
   root.appendChild(section);
 
   // Focus Start so keyboard users can just hit Enter.
