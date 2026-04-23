@@ -138,14 +138,24 @@
   min-height: 520px;
   display: flex;
   flex-direction: column;
+  /* Stage fills the scene via position: absolute; the dialogue /
+     choices / hint trio are the only flex children, pinned to the
+     bottom so growing dialogue text expands upward *over* the stage
+     instead of pushing it. Fixes the S3/S4 bg-jump we saw while
+     the narrator's long lines typed out. */
+  justify-content: flex-end;
   overflow: hidden;
   cursor: pointer;
 }
 
+/* Stage is absolute so its size is decoupled from dialogue growth:
+   bg + char stay locked regardless of how much text has been typed.
+   Children (bg / char / placeholders) remain absolute within this
+   container and their z-indices stack as before. */
 .scene__stage {
-  flex: 1;
-  position: relative;
-  min-height: 240px;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 /* Placeholder tile sits behind the <img> at z-index 0. When the
