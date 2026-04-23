@@ -895,6 +895,215 @@
 }
 
 /* ===================================================================== */
+/* Slice F — S7 "illusion shatters" entry                                 */
+/* ===================================================================== */
+
+/* engine.renderScene adds `.is-s7-entry` to the freshly-mounted S7
+   scene element. Three layered animations run for their own durations:
+     - 400ms shake on the `.scene` itself (translate keyframes).
+     - 200ms hue/invert strobe on the same element.
+     - 1s chromatic-aberration on the background via red/cyan
+       drop-shadows.
+   The class is removed by the engine after 1s so a dev-jumper re-entry
+   can retrigger the keyframes by re-adding the class. Under
+   prefers-reduced-motion the rules below are stripped. */
+
+.scene.is-s7-entry {
+  animation:
+    s7-shake 400ms steps(6, end) 1,
+    s7-glitch-strobe 200ms steps(4, end) 1;
+}
+
+.scene.is-s7-entry .scene__bg {
+  animation: s7-chromatic 1000ms ease-out 1;
+}
+
+@keyframes s7-shake {
+  0%   { transform: translate(0, 0); }
+  15%  { transform: translate(calc(var(--px) * -1.5), calc(var(--px) * 0.5)); }
+  30%  { transform: translate(calc(var(--px) * 1.5),  calc(var(--px) * -0.75)); }
+  45%  { transform: translate(calc(var(--px) * -1),   calc(var(--px) * 0.75)); }
+  60%  { transform: translate(calc(var(--px) * 1),    calc(var(--px) * -0.5)); }
+  75%  { transform: translate(calc(var(--px) * -0.5), calc(var(--px) * 0.25)); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Strobe: hue-rotate flickers the whole colour space; the invert mid-
+   frame punches a single frame of film-burn white. 4 steps over 200ms
+   = ~50ms per frame, fast enough to read as a glitch not a transition. */
+@keyframes s7-glitch-strobe {
+  0%   { filter: none; }
+  25%  { filter: hue-rotate(90deg) saturate(1.4); }
+  50%  { filter: invert(1) hue-rotate(180deg); }
+  75%  { filter: hue-rotate(270deg) saturate(1.4); }
+  100% { filter: none; }
+}
+
+/* Red-cyan chromatic aberration via two drop-shadows, decaying to
+   zero over the 1s tail. The bg sits in front of its placeholder
+   (z-index 1 vs 0), so the shadow offsets don't leak through. */
+@keyframes s7-chromatic {
+  0%   {
+    filter:
+      drop-shadow(calc(var(--px) * 1.25) 0 0 rgba(255, 64, 96, 0.9))
+      drop-shadow(calc(var(--px) * -1.25) 0 0 rgba(64, 224, 255, 0.9));
+  }
+  60%  {
+    filter:
+      drop-shadow(calc(var(--px) * 0.75) 0 0 rgba(255, 64, 96, 0.5))
+      drop-shadow(calc(var(--px) * -0.75) 0 0 rgba(64, 224, 255, 0.5));
+  }
+  100% { filter: none; }
+}
+
+/* ===================================================================== */
+/* Slice F — progress dots                                                */
+/* ===================================================================== */
+
+/* A small row of 9 circles pinned to the top of the viewport. Hollow
+   rings by default; fill when `state.visitedScenes` includes the dot's
+   scene id; add a pink outer ring when it matches `currentSceneId`.
+   Hidden on the title screen via `body[data-screen="title"]`. */
+.progress-dots {
+  position: fixed;
+  top: calc(var(--px) * 2);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  gap: calc(var(--px) * 2);
+  padding: calc(var(--px)) calc(var(--px) * 2);
+  background: rgba(15, 16, 32, 0.6);
+  border: 2px solid var(--ghost);
+  box-shadow: var(--px) var(--px) 0 rgba(122, 127, 154, 0.4);
+  pointer-events: none;
+}
+
+body[data-screen="title"] .progress-dots { display: none; }
+
+.progress-dots__dot {
+  display: inline-block;
+  width: calc(var(--px) * 2.5);
+  height: calc(var(--px) * 2.5);
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--ghost);
+  box-sizing: content-box;
+  transition: background-color 120ms linear, border-color 120ms linear;
+}
+
+.progress-dots__dot.is-visited {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+/* Current dot gets a pink ring via outline so it stacks on top of
+   the visited fill without changing the dot's footprint. */
+.progress-dots__dot.is-current {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+  background: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ===================================================================== */
+/* Slice F — audio toggle                                                 */
+/* ===================================================================== */
+
+/* Fixed top-right pixel button. Mirrors `.dev-jumper__btn` chrome so
+   the two corner controls feel like a set. z-index below the content
+   note (2500) and pause overlay (2000) is fine — the toggle is muted
+   behind modals because they consume clicks. */
+.audio-toggle {
+  position: fixed;
+  top: calc(var(--px) * 3);
+  right: calc(var(--px) * 3);
+  z-index: 1500;
+  padding: calc(var(--px)) calc(var(--px) * 3);
+  background: var(--navy);
+  color: var(--cyan);
+  border: var(--border) solid var(--cyan);
+  box-shadow: var(--px) var(--px) 0 var(--ghost);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.audio-toggle:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.audio-toggle:active {
+  transform: translate(calc(var(--px) / 2), calc(var(--px) / 2));
+  box-shadow: none;
+}
+
+.audio-toggle.is-muted {
+  color: var(--ghost);
+  border-color: var(--ghost);
+}
+.audio-toggle.is-muted:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+/* ===================================================================== */
+/* Slice F — first-launch content note modal                              */
+/* ===================================================================== */
+
+/* Same modal pattern as the pause overlay, but framed in amber so the
+   reader reads it as a preface, not a pause. No backdrop-click
+   dismiss (see src/ui/contentNote.js). */
+.content-note {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--px) * 4);
+  background: rgba(15, 16, 32, 0.94);
+}
+
+.content-note__panel {
+  background: var(--navy);
+  border: var(--border) solid var(--amber);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--pink);
+  padding: calc(var(--px) * 6) calc(var(--px) * 7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--px) * 4);
+  min-width: calc(var(--px) * 72);
+  max-width: calc(var(--px) * 130);
+}
+
+.content-note__title {
+  margin: 0;
+  font-size: 16px;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: var(--px) var(--px) 0 var(--pink);
+}
+
+.content-note__body {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--cyan);
+  text-align: center;
+  max-width: 46ch;
+}
+
+.content-note__btn {
+  min-width: calc(var(--px) * 40);
+}
+
+/* ===================================================================== */
 /* Reduced-motion: strip the caret blink, glitch, and transitions.       */
 /* The typewriter already respects this at the JS layer.                 */
 /* ===================================================================== */
@@ -943,5 +1152,19 @@
   }
   .scene-transition.is-active {
     opacity: 0;
+  }
+  /* Slice F: strip S7 entry drama. The engine still adds the class,
+     but every keyframe is cancelled so the reader gets a clean cut. */
+  .scene.is-s7-entry,
+  .scene.is-s7-entry .scene__bg {
+    animation: none;
+    filter: none;
+    transform: none;
+  }
+  .progress-dots__dot {
+    transition: none;
+  }
+  .audio-toggle:active {
+    transform: none;
   }
 }

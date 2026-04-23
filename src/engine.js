@@ -26,6 +26,7 @@ import { recordVisit } from './state.js';
 import { mountSceneView } from './ui/sceneView.js';
 import { mountEndingView } from './ui/endingView.js';
 import { mountPauseOverlay } from './ui/pauseOverlay.js';
+import { playBlip, playTransition } from './audio.js';
 
 /**
  * Default typewriter speed in milliseconds per character.
@@ -59,6 +60,14 @@ let escInstalled = false;
  * never sees the old view's text evaporate mid-character.
  */
 const TRANSITION_HALF_MS = 150;
+
+/**
+ * Slice F — "illusion shatters" duration for the S7 entry animation.
+ * Longest child effect is `s7-chromatic` at 1000ms; after that the
+ * class is stripped so a repeat visit via dev-jumper can re-fire it
+ * (the class removal + re-add is what retriggers CSS animations).
+ */
+const S7_ENTRY_MS = 1000;
 
 /** @type {HTMLDivElement|null} The overlay <div> lives on document.body across renders. */
 let transitionOverlay = null;
@@ -174,6 +183,10 @@ function runTransition(doSwap) {
   }
   const overlay = ensureTransitionOverlay();
   const token = ++transitionToken;
+  // Slice F — sonic beat for the cut. Fires at the start of the
+  // fade-out so the whoosh lands underneath the black flash rather
+  // than after the new scene has already painted.
+  playTransition();
   overlay.classList.add('is-active');
   setTimeout(() => {
     if (token !== transitionToken) return;
@@ -232,6 +245,29 @@ export function renderScene(id) {
     currentScreen = scene.type === 'ending'
       ? mountEndingView(rootEl, scene, ctx)
       : mountSceneView(rootEl, scene, ctx);
+
+    // Slice F — S7 dramatic entry. Triggered here (inside doSwap, so
+    // the class lands on the freshly-mounted `.scene`) rather than
+    // inside sceneView, which would couple a generic view to one
+    // scene's atmosphere. `is-s7-entry` drives shake + glitch-strobe
+    // + chromatic-aberration keyframes defined in scene.css; removed
+    // after S7_ENTRY_MS so a dev-jumper re-entry can retrigger them.
+    if (id === 'S7') {
+      const sceneEl = /** @type {HTMLElement|null} */ (
+        rootEl.querySelector('.scene[data-scene-id="S7"]')
+      );
+      if (sceneEl) {
+        sceneEl.classList.add('is-s7-entry');
+        setTimeout(() => sceneEl.classList.remove('is-s7-entry'), S7_ENTRY_MS);
+      }
+    }
+
+    // Slice F — notify listeners (e.g. progress dots) that the DOM
+    // now reflects a new scene. Fires after mount so observers can
+    // read both `state` and the live document synchronously.
+    document.dispatchEvent(new CustomEvent('scene:rendered', {
+      detail: { id, type: scene.type },
+    }));
   });
 }
 
@@ -334,6 +370,11 @@ export function typewriter(el, text, speed = DEFAULT_TYPE_SPEED_MS) {
     }
     i += 1;
     el.textContent = safe.slice(0, i);
+    // Slice F — audible typewriter. Fire a blip every 3 characters so
+    // long lines have a perceptible cadence without each letter
+    // clicking (which fatigues on ~300-char paragraphs). playBlip()
+    // no-ops when muted or when the AudioContext is unavailable.
+    if (i % 3 === 0) playBlip();
     if (i >= safe.length) {
       resolveFn();
       return;

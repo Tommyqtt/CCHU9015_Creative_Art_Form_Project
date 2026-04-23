@@ -88,17 +88,39 @@ Note: Slice C was originally titled "wire engine, scene renderer, typewriter, ke
 
 ---
 
-## SLICE F — Classroom build polish (was Slice E)
+## SLICE F — Audio feedback, transitions, and the Scene 7 glitch moment
+
+- **status:** DONE (2026-04-23)
+- **commit:** see `docs/INTEGRATION_LOG.md` (most recent entry)
+- **files touched:** `src/audio.js` (new), `src/ui/audioToggle.js` (new), `src/ui/progressDots.js` (new), `src/ui/contentNote.js` (new), `src/engine.js`, `src/ui/sceneView.js`, `src/main.js`, `styles/scene.css`, `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+**Goal.** The piece gains a sonic pulse (typewriter blips, choice clicks, transition whooshes), the S7 "illusion shatters" beat reads emotionally (shake + glitch-strobe + chromatic aberration), a 9-dot progress row at the top of the viewport shows walked ground without spoiling what's ahead, and a first-launch content-note modal sets context once before letting the reader into the title screen.
+
+**Acceptance (all met).**
+- [x] **`src/audio.js`.** Single AudioContext lazily built on first `play*` call. `playBlip()` = 800 Hz sine · 15 ms attack/decay. `playChoiceSound()` = 500 Hz square · 30 ms. `playTransition()` = band-passed (1200 Hz, Q 0.7) decaying white-noise burst · 200 ms. Mute state persists in `localStorage` under `audio:muted`; `onMuteChange` lets UI resubscribe. Document-level pointer/key/touch listener resumes the context on first user gesture. Missing `AudioContext`, private-mode `localStorage`, and mid-render `ctx` failures all no-op silently.
+- [x] **Typewriter blip.** `engine.typewriter` fires `playBlip()` on every 3rd character so long lines have a perceptible cadence without each letter clicking. No blips under `prefers-reduced-motion` (the typewriter writes synchronously, so the `i % 3 === 0` branch never hits).
+- [x] **Choice click.** `sceneView.commitChoice` fires `playChoiceSound()` alongside the `.is-pressed` CSS press animation, at input time rather than at the end of the 80ms delay, so the click reads as responsive.
+- [x] **Transition whoosh.** `engine.runTransition` fires `playTransition()` at the start of the fade-out, underneath the black flash. No sound under reduced-motion (the transition short-circuits to a synchronous swap before `playTransition` is reached).
+- [x] **S7 dramatic entry.** `engine.renderScene` adds `.is-s7-entry` to the freshly-mounted S7 scene root when `id === 'S7'`, removed after 1000ms so dev-jumper re-entries retrigger. CSS keyframes: `s7-shake` (400ms translate on `.scene`), `s7-glitch-strobe` (200ms hue-rotate + invert on `.scene`), `s7-chromatic` (1s decaying red/cyan drop-shadow on `.scene__bg`). Reduced-motion strips every keyframe + resets `transform` / `filter`.
+- [x] **Progress dots.** `src/ui/progressDots.js` renders a fixed, top-centre row of 9 dots (S1…S9). Hollow rings by default; `.is-visited` fills with cyan; `.is-current` adds a pink outline. Listens to document-level `scene:rendered` (dispatched by `engine.renderScene` after mount) and `state:reset` (dispatched by `main.showTitleScreen`). Hidden on `body[data-screen="title"]`.
+- [x] **Audio toggle.** `src/ui/audioToggle.js` mounts a fixed top-right pixel button. Text mirrors state (`AUDIO ON` / `AUDIO OFF`); `aria-pressed` + `aria-label` announce the action. Click flips `toggleMute()`. Subscribes to `onMuteChange` so external mute changes keep the label in sync.
+- [x] **Content note modal.** `src/ui/contentNote.js` shows a one-shot pixel-amber modal framed by the shared palette on first launch. Copy: "This game explores themes of loneliness, parasocial relationships, and performative intimacy. Click 'Begin' when ready." Dismiss paths: Begin button click or Esc key. `localStorage` key `content-note:seen` is set on first dismiss so the modal never returns. No backdrop dismiss (intentional consent gate).
+- [x] **Reduced-motion discipline.** `@media (prefers-reduced-motion: reduce)` strips `s7-shake`, `s7-glitch-strobe`, `s7-chromatic`, `progress-dots__dot` transition, and `audio-toggle:active` transform. Audio cues still fire (sound is not motion); a user who wants silence uses the mute toggle.
+- [x] **No regressions.** `node --check` on all 12 JS files: OK. JS-emitted class names (`progress-dots`, `progress-dots__dot`, `audio-toggle`, `content-note`, `content-note__*`, `is-s7-entry`, `is-visited`, `is-current`, `is-muted`) all resolve to CSS rules. Dev-server 200 OK on every new path. Existing Slice E placeholder + transition system untouched.
+
+---
+
+## SLICE G — Classroom build polish (was Slice E, then Slice F)
 
 - **status:** TODO
-- **depends on:** E
+- **depends on:** F
 
 **Goal.** The build is presentable on the classroom projector: full-screen layout at the projector's native resolution, font self-hosted so `file://` without network still reads pixel-art, smoke for reduced-motion, and a short operator runbook in `README.md`.
 
 **Acceptance (planned).**
 - [ ] Press Start 2P available at `assets/fonts/` with a font-face declaration in `main.css`.
 - [ ] Manual check at the projector resolution the class uses (confirm before presentation day).
-- [ ] Reduced-motion end-to-end (typewriter skips, caret blink removed, phone-glow frozen, scene transitions collapsed) confirmed.
+- [ ] Reduced-motion end-to-end (typewriter skips, caret blink removed, phone-glow frozen, scene transitions collapsed, S7 drama stripped, audio optional) confirmed.
 - [ ] README §"Running on presentation day" added.
 
 ---
@@ -111,4 +133,5 @@ Note: Slice C was originally titled "wire engine, scene renderer, typewriter, ke
 - **S9 takeaway** — left empty (`''`) per spec. If a CCHU9015 one-liner is authored, drop it into `STORY.S9.takeaway`.
 - **`scripts/validate-story.mjs`** — the runtime dev-flag BFS in `story.js` is dev-only. A standalone node-runnable validator (same invariants: keys equal expected set, every `next` resolves, reachable set matches expectation) would catch data drift in CI/pre-commit.
 - **Pose atlas** — Slice D will need `happy` / `sad` / `glitch` / `idle` distinguishable. Decide whether to draw four sprites or one sprite + CSS filter variations.
-- **Audio** — spec doesn't require sound; consider a single ambient bed track and a keypress SFX, both optional.
+- **Ambient bed track** — Slice F ships blips / choice / whoosh / S7 drama; an optional looping ambient layer (muteable via the same toggle) would fill the dead air between dialogue beats.
+- **Audio toggle keyboard shortcut** — currently click-only. A single-letter shortcut (M) would be cheap; needs a Slice-F-follow-up decision on whether to claim the key globally.

@@ -32,6 +32,7 @@
  */
 
 import { typewriter } from '../engine.js';
+import { playChoiceSound } from '../audio.js';
 
 /**
  * Display-label lookup for speaker ids. Keeps styling (colour per
@@ -226,6 +227,12 @@ export function mountSceneView(root, scene, ctx) {
     choiceLocked = true;
     const btn = choiceButtons[idx];
     if (btn) btn.classList.add('is-pressed');
+    // Slice F — sonic confirmation lands at the same instant as the
+    // CSS press animation, not at the end of the CHOICE_PRESS_MS
+    // delay, so the click reads as responsive even if the engine
+    // is mid-transition fading in. playChoiceSound() no-ops when
+    // muted or when Web Audio is unavailable.
+    playChoiceSound();
     setTimeout(() => onChoice(choices[idx]), CHOICE_PRESS_MS);
   }
 
