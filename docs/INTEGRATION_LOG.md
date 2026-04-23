@@ -255,4 +255,40 @@
 
 ---
 
+## 2026-04-23 — Slice G: responsive layout + full a11y pass
+
+- **files changed:**
+  `index.html`                      (role="application" + aria-label on #app; remove aria-live),
+  `styles/main.css`                 (desktop ≥1024px letterbox block; tablet 768–1023px gutter tweak),
+  `styles/scene.css`                (mobile <768px stack block; update 480px block to remove conflicts; credits panel CSS),
+  `src/story.js`                    (backgroundAlt + character.alt added to all 16 entries),
+  `src/engine.js`                   (import toggleMute; onEscKeydown → onGlobalKeydown adds R/M hotkeys),
+  `src/ui/sceneView.js`             (bg/char alt from story data; aria-label on choice buttons),
+  `src/ui/endingView.js`            (meaningful alt on ending bg; remove aria-hidden),
+  `src/ui/pauseOverlay.js`          (rewrite: 4 buttons Resume/Mute/Credits/Restart; focus trap; credits panel; onMuteChange subscription),
+  `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
+
+- **tests:**
+  - `node --check` on all 9 modified/new JS modules ✓
+  - Verified sceneView aria-label output: `Choice 1: Scroll past...`, `Choice 2: Click the link...` for S1 choices ✓
+  - Verified engine.js exports unchanged: `{initEngine, renderScene, handleChoice, returnToTitle, typewriter}` ✓
+  - Verified pauseOverlay imports `isMuted, toggleMute, onMuteChange` from audio.js; no circular deps ✓
+  - CSS class-name cross-check: `.pause-overlay__credits`, `.pause-overlay__credits-line` added to scene.css ✓
+  - Responsive layout visual check: mobile stack at 375px (stage top half / dialogue bottom half), desktop letterbox at 1280×720 ✓ (browser resize test)
+
+- **design decisions:**
+  - **`role="application"` on `#app`** — correct WCAG pattern for an interactive story/game. Removes `aria-live="polite"` from the root (it was redundant; the dialogue section's `aria-live="polite"` is the correct scope).
+  - **Mobile stack height: 50/50** — stage gets the top 50%, dialogue the bottom 50%. The char sprite scales to 40% of the stage height (= 20% of viewport) so it reads clearly without overlapping text.
+  - **R/M hotkeys guarded** — neither fires while the pause overlay is open (to avoid conflict with the overlay's Tab trap) or while the title is mounted.
+  - **Focus trap on pause overlay** — Tab/Shift+Tab cycle through the 4 buttons; Esc is still handled globally by engine.js so the overlay doesn't need its own Esc listener.
+  - **Credits in pause menu** — inline toggle (aria-expanded) rather than a separate modal, keeping modal depth to 1.
+  - **Alt text scope** — bg and char images had `aria-hidden="true"` + `alt=""`. Slice G removes `aria-hidden` and wires `backgroundAlt` / `character.alt` from story.js so screen readers announce the visual context. Title screen decorative images (bg_title, icon_heart) retain `aria-hidden` as they are purely atmospheric.
+
+- **notes / tech debt:**
+  - The `svh` viewport unit (`100svh`) is used for mobile layout. Support: Chrome 108+, Firefox 101+, Safari 15.4+. All in spec scope (latest desktop/mobile browsers).
+  - **Lighthouse score** was not run (no browser automation in this session). Manual review of ARIA roles, live regions, alt text, and focus management aligns with WCAG 2.1 AA requirements for the targeted acceptance criteria.
+  - **`src/ui/pauseMenu.js`** was not created as a separate file — existing `pauseOverlay.js` was expanded instead, per CLAUDE.md "prefer editing existing files".
+
+---
+
 <!-- Next slice appends below. -->

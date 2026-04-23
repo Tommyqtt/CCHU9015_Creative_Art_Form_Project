@@ -76,8 +76,9 @@ export function mountEndingView(root, scene, ctx) {
   const bg = document.createElement('img');
   bg.className = 'ending__bg';
   bg.src = ENDING_BG;
-  bg.alt = '';
-  bg.setAttribute('aria-hidden', 'true');
+  bg.alt = typeof scene.backgroundAlt === 'string' && scene.backgroundAlt
+    ? scene.backgroundAlt
+    : 'Dark abstract ending card with a faint starfield';
   bg.addEventListener('load',  () => { bgPlaceholder.classList.add('is-hidden'); });
   bg.addEventListener('error', () => { bg.classList.add('is-hidden'); });
 

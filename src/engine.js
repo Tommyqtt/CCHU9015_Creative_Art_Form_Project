@@ -26,7 +26,7 @@ import { recordVisit } from './state.js';
 import { mountSceneView } from './ui/sceneView.js';
 import { mountEndingView } from './ui/endingView.js';
 import { mountPauseOverlay } from './ui/pauseOverlay.js';
-import { playBlip, playTransition } from './audio.js';
+import { playBlip, playTransition, toggleMute } from './audio.js';
 
 /**
  * Default typewriter speed in milliseconds per character.
@@ -92,37 +92,67 @@ export function initEngine(el, hooks = {}) {
 }
 
 /**
- * Install the document-level Esc handler that toggles the pause
- * overlay. Guarded against double-install so repeated `initEngine`
- * calls don't stack listeners. The handler is a no-op when no
- * scene/ending is mounted, so the title screen keeps Esc free.
+ * Install the document-level global hotkey handler (Esc, R, M).
+ * Guarded against double-install so repeated `initEngine` calls don't
+ * stack listeners. The Esc/R/M handlers are all no-ops while the title
+ * screen is mounted (currentScreen === null).
  * @returns {void}
  */
 function installEscListener() {
   if (escInstalled) return;
   escInstalled = true;
-  document.addEventListener('keydown', onEscKeydown);
+  document.addEventListener('keydown', onGlobalKeydown);
 }
 
 /**
- * Toggle the pause overlay on Esc. Open when a scene/ending is up
- * and no overlay is open; close when the overlay is open. Ignored
- * while the title screen is mounted (currentScreen === null).
+ * Global hotkeys while a scene/ending is mounted:
+ *   Esc — toggle the pause overlay (open or close).
+ *   R   — restart from the title screen (immediate, no pause needed).
+ *   M   — toggle mute via audio.js.
+ *
+ * Guards: modifier keys, input targets, and the title screen (currentScreen
+ * === null) are all skipped. R and M are also no-ops while the pause is
+ * open so they don't conflict with the overlay's own keyboard handling.
+ *
  * @param {KeyboardEvent} ev
  * @returns {void}
  */
-function onEscKeydown(ev) {
-  if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+function onGlobalKeydown(ev) {
   if (ev.defaultPrevented) return;
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-  if (pauseHandle) {
+
+  const k = ev.key;
+
+  // Esc: toggle pause overlay regardless of currentScreen state
+  if (k === 'Escape' || k === 'Esc') {
+    if (pauseHandle) {
+      ev.preventDefault();
+      closePause();
+      return;
+    }
+    if (!currentScreen) return;
     ev.preventDefault();
-    closePause();
+    openPause();
     return;
   }
-  if (!currentScreen) return;
-  ev.preventDefault();
-  openPause();
+
+  // R / M only fire when a scene/ending is mounted and the pause is closed
+  if (!currentScreen || pauseHandle) return;
+  if (ev.target instanceof HTMLInputElement)   return;
+  if (ev.target instanceof HTMLTextAreaElement) return;
+
+  // R: restart — return to title (same as ending's "Replay" button)
+  if (k === 'r' || k === 'R') {
+    ev.preventDefault();
+    returnToTitle();
+    return;
+  }
+
+  // M: toggle mute
+  if (k === 'm' || k === 'M') {
+    ev.preventDefault();
+    toggleMute();
+  }
 }
 
 /** Open the pause overlay. No-op if one is already open. */
@@ -312,12 +342,21 @@ export function returnToTitle() {
  *   - Returns a Promise that resolves when the full text has been
  *     written to `el.textContent`, OR when `.skip()` is called
  *     (whichever is first). The Promise never rejects.
- *   - The returned Promise exposes a `.skip()` method that jumps to
- *     the final text immediately and resolves the pending Promise on
- *     the next tick. Safe to call multiple times (idempotent).
+ *   - The returned Promise exposes:
+ *       * `.skip()` — synchronously fills `el.textContent` with the
+ *         full text, resolves the pending Promise, and flips `.done`
+ *         to `true`. Safe to call any number of times (idempotent).
+ *       * `.done`  — a read-only boolean, `true` the moment the full
+ *         text is on screen (either via natural completion or via
+ *         `.skip()`). Needed because a Promise's `.then` callback
+ *         runs on a microtask, which gives scene/ending views a
+ *         narrow race window where "click right as the last char
+ *         lands" can read `typingDone === false` and bounce off
+ *         `skip()` instead of advancing. `.done` closes that race.
  *   - If `@media (prefers-reduced-motion: reduce)` matches, the full
- *     text is written synchronously and the Promise resolves on the
- *     next microtask — no per-character animation.
+ *     text is written synchronously, `.done` is `true` immediately,
+ *     and the Promise resolves on the next microtask — no per-char
+ *     animation.
  *   - If `speed <= 0`, same behaviour as reduced-motion.
  *   - If `el` is falsy or has no `textContent`, resolves immediately.
  *
@@ -329,15 +368,18 @@ export function returnToTitle() {
  * @param {HTMLElement} el
  * @param {string}      text
  * @param {number}      [speed=DEFAULT_TYPE_SPEED_MS]
- * @returns {Promise<void> & {skip: () => void}}
+ * @returns {Promise<void> & {skip: () => void, readonly done: boolean}}
  */
 export function typewriter(el, text, speed = DEFAULT_TYPE_SPEED_MS) {
   const safe = typeof text === 'string' ? text : String(text ?? '');
 
-  /** Returns the resolved-promise shape with an attached no-op skip. */
+  /** Returns the resolved-promise shape with a no-op skip and done=true. */
   const resolvedNoop = () => {
-    const p = /** @type {Promise<void> & {skip: () => void}} */ (Promise.resolve());
+    const p = /** @type {Promise<void> & {skip: () => void, done: boolean}} */ (
+      Promise.resolve()
+    );
     p.skip = () => {};
+    Object.defineProperty(p, 'done', { value: true, enumerable: true });
     return p;
   };
 
@@ -356,16 +398,28 @@ export function typewriter(el, text, speed = DEFAULT_TYPE_SPEED_MS) {
 
   el.textContent = '';
   let cancelled = false;
+  let done = false;
   let resolveFn = /** @type {() => void} */ (() => {});
-  const promise = /** @type {Promise<void> & {skip: () => void}} */ (
+  const promise = /** @type {Promise<void> & {skip: () => void, done: boolean}} */ (
     new Promise((resolve) => { resolveFn = resolve; })
   );
 
+  /**
+   * Collapse to the final state exactly once. Sets text, flips `done`,
+   * resolves the promise. Idempotent so `.skip()` after natural finish
+   * is a no-op, and natural finish after `.skip()` is also a no-op.
+   */
+  const finish = () => {
+    if (done) return;
+    done = true;
+    el.textContent = safe;
+    resolveFn();
+  };
+
   let i = 0;
   const step = () => {
-    if (cancelled) {
-      el.textContent = safe;
-      resolveFn();
+    if (cancelled || done) {
+      finish();
       return;
     }
     i += 1;
@@ -376,13 +430,20 @@ export function typewriter(el, text, speed = DEFAULT_TYPE_SPEED_MS) {
     // no-ops when muted or when the AudioContext is unavailable.
     if (i % 3 === 0) playBlip();
     if (i >= safe.length) {
-      resolveFn();
+      finish();
       return;
     }
     setTimeout(step, speed);
   };
   setTimeout(step, speed);
 
-  promise.skip = () => { cancelled = true; };
+  promise.skip = () => {
+    cancelled = true;
+    finish();
+  };
+  Object.defineProperty(promise, 'done', {
+    enumerable: true,
+    get: () => done,
+  });
   return promise;
 }

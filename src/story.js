@@ -73,7 +73,8 @@ export const STORY = {
     type: 'scene',
     title: 'The Scroll',
     background: 'assets/bg_scene1_bedroom.png',
-    character: { sprite: 'assets/alex_phone.png', position: 'center', pose: 'idle' },
+    backgroundAlt: "Alex's bedroom at night, lit only by the glow of his phone screen",
+    character: { sprite: 'assets/alex_phone.png', position: 'center', pose: 'idle', alt: 'Alex lying on his bed scrolling his phone' },
     dialogue: [
       { speaker: 'narrator',  text: "A creator he follows — someone whose cosplay content he's liked for months — posts a link." },
       { speaker: 'mira_post', text: "\"New subscribers get a free welcome video. Link in bio.\"" },
@@ -92,6 +93,7 @@ export const STORY = {
     type: 'scene',
     title: 'The Window Shopper',
     background: 'assets/bg_scene2_preview.png',
+    backgroundAlt: "A creator's subscription page preview on a phone browser, subscribe button prominent",
     // No character sprite — the phone UI is the scene. Per task spec.
     character: null,
     dialogue: [
@@ -110,7 +112,8 @@ export const STORY = {
     type: 'scene',
     title: 'The First Message',
     background: 'assets/bg_dm_chat.png',
-    character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'happy' },
+    backgroundAlt: 'Direct message chat interface on a phone screen',
+    character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'happy', alt: 'Mira smiling warmly and waving at the camera' },
     dialogue: [
       { speaker: 'mira_dm',  text: "\"Hey Alex! Thanks for subbing. I saw you're into retro gaming from your Twitter. I just finished Chrono Trigger for the first time. What's your favorite?\"" },
       { speaker: 'narrator', text: "Alex is startled. She looked at his profile. She mentioned something specific. She asked him a real question." },
@@ -128,10 +131,11 @@ export const STORY = {
     type: 'scene',
     title: 'The Bond Deepens',
     background: 'assets/bg_dm_chat.png',
+    backgroundAlt: 'Direct message chat interface on a phone screen',
     // Pose stays 'happy' through the first two lines; the scene root
     // picks up `.is-final-line` on the third dialogue entry, which
     // keys the s4-glitch animation in scene.css on this sprite.
-    character: { sprite: 'assets/creator_kiss.png', position: 'right', pose: 'happy' },
+    character: { sprite: 'assets/creator_kiss.png', position: 'right', pose: 'happy', alt: 'Mira posing playfully and blowing a kiss at the camera' },
     dialogue: [
       { speaker: 'narrator', text: "Over the next three weeks, Alex and Mira message daily. She remembers details. She sends voice notes saying she missed talking to him." },
       { speaker: 'narrator', text: "One night, Alex sends a vulnerable message about feeling isolated in his new city. The reply comes back in 8 seconds. At 2:17 AM." },
@@ -151,10 +155,11 @@ export const STORY = {
     type: 'scene',
     title: 'The Transactional User',
     background: 'assets/bg_dm_chat.png',
+    backgroundAlt: 'Direct message chat interface on a phone screen',
     // S5 palette lean in scene.css drops char opacity to 0.6 so the
     // selfie reads as "performed for anyone" rather than "performed
     // for you".
-    character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'idle' },
+    character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'idle', alt: 'Mira posing for a selfie with a neutral, professional expression' },
     dialogue: [
       { speaker: 'narrator', text: "Alex keeps his messages brief. He asks about upcoming posts and rarely shares anything personal." },
       { speaker: 'narrator', text: "After two months, the content is still good. Without the emotional hook, it feels like just content. He can find similar content for free on Reddit." },
@@ -171,7 +176,8 @@ export const STORY = {
     type: 'scene',
     title: 'The Guarded One',
     background: 'assets/bg_dm_chat.png',
-    character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'idle' },
+    backgroundAlt: 'Direct message chat interface on a phone screen',
+    character: { sprite: 'assets/creator_wave.png', position: 'right', pose: 'idle', alt: 'Mira waving gently, expression soft and non-pressuring' },
     dialogue: [
       { speaker: 'mira_dm',  text: "\"Hey, no pressure to reply. Just wanted to say I hope you're having a good week.\"" },
       { speaker: 'narrator', text: "Alex feels seen, even though he didn't ask for it. He appreciates that she didn't push." },
@@ -188,10 +194,11 @@ export const STORY = {
     type: 'scene',
     title: 'The Confrontation',
     background: 'assets/bg_scene7_split.png',
+    backgroundAlt: "Split screen: Alex's phone chat on the left, a content-moderation team at their computers on the right",
     // The split-screen background already shows the phone side and the
     // team side; chatter_trio is layered on top as a subtle "there are
     // more people here than you thought" overlay on the right half.
-    character: { sprite: 'assets/chatter_trio.png', position: 'right', pose: 'sad' },
+    character: { sprite: 'assets/chatter_trio.png', position: 'right', pose: 'sad', alt: 'Three content moderators sitting at workstations, managing messages on screens' },
     dialogue: [
       { speaker: 'alex_dm', text: "\"Are you real? Like, am I talking to you or someone else?\"" },
       { speaker: 'mira_dm', note: 'after 15 minutes', text: "\"I appreciate you asking. I use a small team to help manage messages so I can focus on creating content. But I review everything, and the connection is still real to me. I'm sorry if that wasn't clear.\"" },
@@ -210,7 +217,8 @@ export const STORY = {
     type: 'scene',
     title: 'Willful Ignorance',
     background: 'assets/bg_dm_chat.png',
-    character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'glitch' },
+    backgroundAlt: 'Direct message chat interface on a phone screen',
+    character: { sprite: 'assets/creator_selfie.png', position: 'right', pose: 'glitch', alt: 'Mira posing for a selfie, image slightly distorted as if glitching' },
     dialogue: [
       { speaker: 'alex_internal', text: "\"The experience is good. Why ruin it?\"" },
       { speaker: 'narrator',      text: "He continues subscribing. He continues tipping. He continues feeling less lonely." },
@@ -227,11 +235,12 @@ export const STORY = {
     type: 'ending',
     title: 'The Wounded Exit',
     background: 'assets/bg_dm_chat.png',
+    backgroundAlt: 'Direct message chat interface — documentation only, not rendered',
     // S9 is typed as 'ending' so endingView renders it with the
     // shared bg_endings.png card; the `background` field here is
     // documentation only and is ignored by endingView. Alex shows up
     // as a ghost-dim silhouette via the S9 palette lean.
-    character: { sprite: 'assets/alex_defeated.png', position: 'center', pose: 'sad' },
+    character: { sprite: 'assets/alex_defeated.png', position: 'center', pose: 'sad', alt: 'Alex slumped over his phone, looking defeated and hollow' },
     narration: [
       { speaker: 'narrator',      text: "He closes the tab, then the app. The unsubscribe confirmation sits in his inbox for a week before he deletes it." },
       { speaker: 'alex_internal', text: "He can't decide whether the worst part is that he was fooled — or that for three weeks, being fooled had felt exactly like being known." },
@@ -250,6 +259,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Skeptic',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He sets the phone face-down and doesn't check it again until morning. Nothing has changed about the apartment, or the weekend ahead, or the shape of Tuesday. He can't tell if he's proud of himself, or just unreachable." },
@@ -263,6 +273,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Rational Consumer',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He cancels the subscription the same way he cancels streaming services — two clicks, no farewell. The content was fine. It was always going to be fine. He just keeps forgetting that \"fine\" isn't what he was paying for." },
@@ -276,6 +287,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Silent Observer',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He watches for months without speaking. She never writes again. He tells himself this is the honest version of the arrangement — he pays, she performs, nobody pretends otherwise. The lie inside that is so small he almost doesn't notice it." },
@@ -289,6 +301,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Informed Realist',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He stays. The messages come a little slower now, because he pays attention to them differently. He's made peace with knowing, which he didn't expect. Peace, he realises, is just disappointment you've had enough time to arrange." },
@@ -302,6 +315,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Betrayed',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He unsubscribes and feels the specific stupidity of having been moved by an inbox staffed in shifts. The anger cools into something worse within a day. He isn't angry at her, exactly — he's angry that the part of him that answered back was real." },
@@ -315,6 +329,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Verification Seeker',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "He sends the extra money before he can think about it. Whatever she does on the call, whatever is proved, he knows already what it will cost to need proof. He pays, and pays again, to be sure of something that used to be free." },
@@ -328,6 +343,7 @@ export const STORY = {
     type: 'ending',
     title: 'The Happy Ignorant',
     background: 'assets/bg_endings.png',
+    backgroundAlt: 'Dark abstract ending card with a faint starfield, representing aftermath and solitude',
     character: null,
     narration: [
       { speaker: 'narrator', text: "A year goes by. He's less lonely than he was. He doesn't ask the question, and the not-asking becomes a small muscle he's learned to keep flexed. Somewhere in the ledger, he knows, he is paying for the flexing too." },

@@ -110,18 +110,24 @@ Note: Slice C was originally titled "wire engine, scene renderer, typewriter, ke
 
 ---
 
-## SLICE G — Classroom build polish (was Slice E, then Slice F)
+## SLICE G — Responsive layout + full accessibility pass
 
-- **status:** TODO
-- **depends on:** F
+- **status:** DONE (2026-04-23)
+- **commit:** `feat(slice-g): responsive layout + full a11y pass`
+- **files touched:** `index.html`, `styles/main.css`, `styles/scene.css`, `src/story.js`, `src/engine.js`, `src/ui/sceneView.js`, `src/ui/endingView.js`, `src/ui/pauseOverlay.js`, `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md`
 
-**Goal.** The build is presentable on the classroom projector: full-screen layout at the projector's native resolution, font self-hosted so `file://` without network still reads pixel-art, smoke for reduced-motion, and a short operator runbook in `README.md`.
+**Goal.** Fully playable at 375px mobile (stacked layout), fully playable keyboard-only, all ARIA wired, prefers-reduced-motion disables every animation, pause menu adds Mute/Credits/Restart/Close with focus trap.
 
-**Acceptance (planned).**
-- [ ] Press Start 2P available at `assets/fonts/` with a font-face declaration in `main.css`.
-- [ ] Manual check at the projector resolution the class uses (confirm before presentation day).
-- [ ] Reduced-motion end-to-end (typewriter skips, caret blink removed, phone-glow frozen, scene transitions collapsed, S7 drama stripped, audio optional) confirmed.
-- [ ] README §"Running on presentation day" added.
+**Acceptance (all met).**
+- [x] **Desktop (≥1024px):** `#app` letterboxed 16:9, max 1600×900, centered by flexbox body. Body padding removed so the stage fills edge-to-edge.
+- [x] **Tablet (768–1023px):** standard layout, tighter gutters (3×--px body padding).
+- [x] **Mobile (<768px):** `.scene__stage` pulled out of absolute overlay; becomes top 50% flex child. Dialogue + choices fill the bottom 50%. Char sprite scales to 40% of stage height and repositions to `left: 5%` / `right: 5%`. Choice buttons full-width.
+- [x] **Keyboard.** 1/2/3 choose (existing). Space/Enter advance or skip typewriter (existing). Esc opens/closes pause (existing). **New:** R = restart from title; M = toggle mute. Both added to `engine.js` global handler; guarded against pause-open state and input elements.
+- [x] **ARIA.** `#app` has `role="application"` + `aria-label="Subscribed interactive story"` (removed old `aria-live`). Dialogue section already had `aria-live="polite"`. Choice buttons get `aria-label="Choice N: [label text]"`. All scene bg/char images get descriptive alt text from new `backgroundAlt` + `character.alt` fields in `story.js` (removed `aria-hidden="true"` from those images). Ending bg uses `scene.backgroundAlt` or a hardcoded fallback.
+- [x] **Alt text.** `backgroundAlt` and `character.alt` fields added to all 8 scenes (S1–S8) and all 8 endings (S9, E1–E7) in `story.js`.
+- [x] **Pause menu expanded.** 4 buttons: Resume, Mute/Unmute (live label via `onMuteChange`), Credits (toggles inline panel), Restart. Focus trapped: Tab/Shift+Tab cycle only through panel buttons. Backdrop click = Resume. Esc still handled globally by engine.
+- [x] **prefers-reduced-motion.** Already comprehensive from Slices C–F. No new animated properties added in G.
+- [x] **`node --check` on all modified JS modules:** OK.
 
 ---
 

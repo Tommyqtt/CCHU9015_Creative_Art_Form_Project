@@ -119,3 +119,40 @@ canvas {
   white-space: nowrap;
   border: 0;
 }
+
+/* --------------------------------------------------------------------- */
+/* Slice G — responsive breakpoints                                       */
+/* --------------------------------------------------------------------- */
+
+/* Desktop (≥1024px): 16:9 letterboxed stage, max 1600×900, centered.
+   body becomes a flex host so #app sits centred with dark bars on
+   ultra-wide monitors. aspect-ratio + max-width + max-height let the
+   browser pick the largest 16:9 box that fits without scroll. Fixed-
+   position overlays (progress dots, audio toggle, pause) are viewport-
+   anchored so they are unaffected by #app's overflow:hidden. */
+@media (min-width: 1024px) {
+  body {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100svh;
+  }
+  #app {
+    aspect-ratio: 16 / 9;
+    max-width: 1600px;
+    max-height: 900px;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+}
+
+/* Tablet (768–1023px): standard layout, slightly tighter gutters.
+   No letterboxing — full viewport height is in use. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  body {
+    padding: calc(var(--px) * 3);
+  }
+}

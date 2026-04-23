@@ -105,8 +105,7 @@ export function mountSceneView(root, scene, ctx) {
   const bg = document.createElement('img');
   bg.className = 'scene__bg';
   bg.src = bgPath;
-  bg.alt = '';
-  bg.setAttribute('aria-hidden', 'true');
+  bg.alt = typeof scene.backgroundAlt === 'string' ? scene.backgroundAlt : '';
   bg.addEventListener('load',  () => { bgPlaceholder.classList.add('is-hidden'); });
   bg.addEventListener('error', () => { bg.classList.add('is-hidden'); });
 
@@ -121,8 +120,7 @@ export function mountSceneView(root, scene, ctx) {
 
     const charEl = document.createElement('img');
     charEl.className = 'scene__char';
-    charEl.alt = '';
-    charEl.setAttribute('aria-hidden', 'true');
+    charEl.alt = typeof scene.character.alt === 'string' ? scene.character.alt : '';
     charEl.src = charPath;
     charEl.dataset.pose = scene.character.pose ?? 'idle';
     charEl.dataset.position = scene.character.position ?? 'center';
@@ -163,9 +161,8 @@ export function mountSceneView(root, scene, ctx) {
   // --- state -----------------------------------------------------------
   const dialogue = Array.isArray(scene.dialogue) ? scene.dialogue : [];
   const choices  = Array.isArray(scene.choices)  ? scene.choices  : [];
-  /** @type {{skip: () => void} | null} */
+  /** @type {(Promise<void> & {skip: () => void, done: boolean}) | null} */
   let typingHandle = null;
-  let typingDone = true;
   let lineIndex = -1;
   let choicesShown = false;
 
@@ -186,13 +183,7 @@ export function mountSceneView(root, scene, ctx) {
     if (i === dialogue.length - 1) {
       sceneEl.classList.add('is-final-line');
     }
-    typingDone = false;
-    const handle = typewriter(textEl, line.text ?? '');
-    typingHandle = handle;
-    handle.then(() => {
-      // Only mark done if this is still the current line (no race with unmount).
-      if (typingHandle === handle) typingDone = true;
-    });
+    typingHandle = typewriter(textEl, line.text ?? '');
   }
 
   /**
@@ -247,6 +238,7 @@ export function mountSceneView(root, scene, ctx) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn scene__choice';
+      btn.setAttribute('aria-label', `Choice ${idx + 1}: ${choice.label ?? ''}`);
       if (typeof choice.id === 'string')   btn.dataset.choiceId = choice.id;
       if (typeof choice.next === 'string') btn.dataset.next = choice.next;
       const num = document.createElement('span');
@@ -266,9 +258,26 @@ export function mountSceneView(root, scene, ctx) {
     });
   }
 
+  /**
+   * Is the currently-playing line fully on screen? Reads the
+   * synchronous `.done` flag exposed by `typewriter()` rather than a
+   * locally-tracked `typingDone` boolean, because `typingDone` used to
+   * be set in a `.then()` microtask — which opened a narrow race where
+   * a click landing in the same task as the final typewriter tick
+   * would see `typingDone === false`, fall into the `skip()` branch,
+   * and bounce off without advancing. With `.done` flipped
+   * synchronously inside `finish()`, that race is closed: clicking the
+   * instant the last character appears correctly advances to the next
+   * line (or shows choices).
+   * @returns {boolean}
+   */
+  function isLineTyped() {
+    return !typingHandle || typingHandle.done === true;
+  }
+
   function advance() {
     if (choicesShown) return;
-    if (!typingDone && typingHandle && typeof typingHandle.skip === 'function') {
+    if (!isLineTyped() && typingHandle && typeof typingHandle.skip === 'function') {
       typingHandle.skip();
       return;
     }

@@ -590,16 +590,101 @@
 }
 
 /* ===================================================================== */
-/* Narrow viewports — stay usable down to 375px per .cursorrules.        */
+/* Slice G — Mobile stack layout (<768px)                                */
+/* ===================================================================== */
+
+/* On phone-sized viewports the overlay-stage + dialogue-at-bottom layout
+   squashes the character sprite against the text box. Instead we stack:
+     top 50%:    .scene__stage (bg + char sprite, relative-positioned)
+     bottom 50%: dialogue box + choices + hint (scrollable if needed)
+
+   Body padding is removed so the scene fills edge-to-edge. The .scene
+   itself becomes the full viewport so the stage can use `flex: 0 0 50%`
+   against a known height. Fixed-position chrome (progress dots, audio
+   toggle, pause overlay) is unaffected — those are viewport-anchored. */
+
+@media (max-width: 767px) {
+  body {
+    padding: 0;
+  }
+
+  #app {
+    width: 100%;
+    height: 100svh;
+    min-height: 0;
+    margin: 0;
+  }
+
+  /* Scene: full viewport height; stack from top rather than bottom */
+  .scene {
+    height: 100svh;
+    min-height: 0;
+    justify-content: flex-start;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Stage: leave absolute-position mode; become the top flex child */
+  .scene__stage {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    flex: 0 0 50%;
+    overflow: hidden;
+  }
+
+  /* Char sprite: scale to 40% of the stage height, stay bottom-anchored */
+  .scene__char {
+    height: 40%;
+    max-height: none;
+  }
+  .scene__char[data-position="left"]  { left:  5%; }
+  .scene__char[data-position="right"] { right: 5%; }
+
+  /* Dialogue: expand to fill remaining space, allow internal scroll if
+     a very long line or many choices can't fit */
+  .scene__dialogue {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    margin: calc(var(--px) * 2);
+  }
+
+  /* Choices: full-width buttons so touch targets are as large as possible */
+  .scene__choice {
+    width: 100%;
+  }
+
+  /* Hint: smaller, tuck it tight */
+  .scene__hint {
+    font-size: 8px;
+    margin: 0 calc(var(--px) * 2) calc(var(--px) * 2);
+  }
+
+  /* Ending: min-height 0 so it fills the viewport via #app's 100svh */
+  .ending {
+    min-height: 0;
+    height: 100svh;
+  }
+
+  /* Pause overlay panel: tighter padding on small screens */
+  .pause-overlay__panel {
+    min-width: 0;
+    width: calc(100vw - var(--px) * 8);
+    padding: calc(var(--px) * 4) calc(var(--px) * 4);
+  }
+}
+
+/* ===================================================================== */
+/* Narrow viewports — additional tweaks below 480px                      */
+/* (applies on top of the 768px block above for super-narrow phones)     */
 /* ===================================================================== */
 
 @media (max-width: 480px) {
-  body { padding: calc(var(--px) * 2); }
   .title__logo     { font-size: 28px; }
   .title__subtitle { font-size: 10px; }
   .title__tagline  { font-size: 9px; }
-  .scene,
-  .ending          { min-height: 420px; }
   .scene__text,
   .ending__narration { font-size: 11px; }
   .ending__title   { font-size: 20px; letter-spacing: 0.08em; }
@@ -607,14 +692,7 @@
   .ending__action  { min-width: 0; }
   .scene__choice   { font-size: 10px; padding: calc(var(--px) * 2) calc(var(--px) * 3); }
   .dev-jumper      { font-size: 8px; right: calc(var(--px) * 2); bottom: calc(var(--px) * 2); }
-  /* Slice E: on narrow viewports the 65vh sprite eats the dialogue
-     box. Cap to 50vh and pull left/right anchors in a little. */
-  .scene__char {
-    height: 50vh;
-  }
-  .scene__char[data-position="left"]  { left:  8%; }
-  .scene__char[data-position="right"] { right: 8%; }
-  .title__heart { width: calc(var(--px) * 8); height: calc(var(--px) * 8); }
+  .title__heart    { width: calc(var(--px) * 8); height: calc(var(--px) * 8); }
 }
 
 /* ===================================================================== */
@@ -850,6 +928,26 @@
   color: var(--ghost);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Credits panel inside pause overlay — toggled by the Credits button.
+   `.is-hidden` hides it; removing that class reveals a tight block of
+   ghost-coloured lines before the hint. */
+.pause-overlay__credits {
+  width: 100%;
+  padding: calc(var(--px) * 3);
+  border: 2px solid var(--ghost);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px));
+}
+
+.pause-overlay__credits-line {
+  margin: 0;
+  font-size: 9px;
+  color: var(--ghost);
+  letter-spacing: 0.06em;
+  line-height: 1.6;
 }
 
 /* ===================================================================== */

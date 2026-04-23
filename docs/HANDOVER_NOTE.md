@@ -2,7 +2,7 @@
 
 > Single-file snapshot of current project state. **Overwritten at the end of every slice.** If you are resuming this project, read this first, then `docs/TASKS.md` and the latest block of `docs/INTEGRATION_LOG.md`.
 
-**Last updated:** 2026-04-23, end of Slice F (audio + transitions + Scene 7 drama).
+**Last updated:** 2026-04-23, end of Slice G (responsive layout + full accessibility pass).
 
 ---
 
@@ -12,35 +12,39 @@
 
 ## Current branch
 
-`main`. Working tree clean after the Slice F commit. Last nine code commits (most recent first):
+`main`. Working tree clean after the Slice G commit. Last nine code commits (most recent first):
+- `feat(slice-g): responsive layout + full a11y pass`
 - `feat(slice-f): audio + transitions + scene 7 drama`
 - `fix(slice-e): stop stage from being pushed up by typing dialogue`
 - `feat(slice-e): integrate pixel art assets`
 - `chore(assets): remove scratch PNGs`
+- `chore(assets): add alex_neutral_clean + image_clean PNGs`
 - `feat(slice-c): scene and ending rendering with choices`
 - `feat(slice-c): visual polish + pause overlay`
-- `chore(slice-b): tune typewriter default to 15ms`
 - `feat(slice-b): story data + engine with dev jumper`
-- `feat(slice-a): scaffold + title screen`
 
 ## What exists on `main`
 
 - **Rules & specs:** `.cursorrules`, `CLAUDE.md`, `docs/story_spec.md`, `docs/story line tree diagram.png`, `docs/script.pptx`.
 - **Entry + CSS:** `index.html`, `styles/reset.css`, `styles/main.css`, `styles/scene.css`.
 - **Source (12 modules):**
-  - `src/main.js` — boots on `DOMContentLoaded`, owns the title lifecycle, installs the engine lazily on first start. **Slice F added** `bootSessionChrome()` (audio toggle + progress dots), `bootContentNote()` (first-launch modal), and `body.dataset.screen` flipping (`'title'` / `'story'`); also dispatches a `state:reset` CustomEvent after reset so progress dots clear between playthroughs.
-  - `src/state.js` — `state = { currentSceneId, history, visitedScenes: Set }`. Helpers: `reset()`, `recordVisit()`, deprecated `enterScene()`.
-  - `src/story.js` — full 16-entry `STORY` (S1–S9 + E1–E7), deep-frozen. Unchanged since Slice E.
-  - `src/engine.js` — `initEngine`, `renderScene`, `handleChoice`, `returnToTitle`, `typewriter`. **Slice F additions:** imports `playBlip` + `playTransition`; typewriter fires `playBlip()` every 3rd character; `runTransition` fires `playTransition()` at start of fade-out; `renderScene` adds `.is-s7-entry` to the freshly-mounted S7 `.scene` for 1000ms so dev-jumper re-entries retrigger CSS keyframes; dispatches `scene:rendered` CustomEvent after every mount (`detail: { id, type }`).
-  - `src/audio.js` **(new in F)** — single AudioContext lazily built on first `play*` call. `playBlip()` = 800 Hz sine · 15 ms, `playChoiceSound()` = 500 Hz square · 30 ms, `playTransition()` = 1200 Hz band-passed decaying white-noise burst · 200 ms. Mute persists in localStorage (`audio:muted`); `onMuteChange` pub/sub lets UI re-subscribe. Document-level pointer/key/touch listener resumes a suspended context on user gesture. Tolerant of missing Web Audio and private-mode localStorage.
-  - `src/ui/titleScreen.js` — unchanged since Slice E (bg_title painting + icon_heart corners).
-  - `src/ui/sceneView.js` — **Slice F addition:** imports `playChoiceSound`; `commitChoice` fires it alongside `.is-pressed` at input time.
-  - `src/ui/endingView.js` — unchanged since Slice C.2.
+  - `src/main.js` — boots on `DOMContentLoaded`, owns the title lifecycle, installs the engine lazily on first start. Slice F added `bootSessionChrome()` (audio toggle + progress dots), `bootContentNote()` (first-launch modal), and `body.dataset.screen` flipping (`'title'` / `'story'`); also dispatches `state:reset` after reset so progress dots clear.
+  - `src/state.js` — `state = { currentSceneId, history, visitedScenes: Set }`. Helpers: `reset()`, `recordVisit()`.
+  - `src/story.js` — full 16-entry `STORY` (S1–S9 + E1–E7), deep-frozen. **Slice G added** `backgroundAlt` (descriptive alt for bg image) and `character.alt` (descriptive alt for sprite) to all 16 entries.
+  - `src/engine.js` — `initEngine`, `renderScene`, `handleChoice`, `returnToTitle`, `typewriter`. Slice F: imports `playBlip` + `playTransition`; typewriter blips every 3rd char; `runTransition` fires whoosh; `renderScene` adds `.is-s7-entry` for 1000ms; dispatches `scene:rendered` CustomEvent. **Slice G added** `toggleMute` import; renamed `onEscKeydown` → `onGlobalKeydown` which also handles `R` (restart) and `M` (mute toggle) while a scene is mounted and no pause is open.
+  - `src/audio.js` **(new in F)** — single AudioContext lazily built on first play call. `playBlip`, `playChoiceSound`, `playTransition`. Mute persists in localStorage. `onMuteChange` pub/sub. Tolerant of missing Web Audio and private-mode localStorage.
+  - `src/ui/titleScreen.js` — unchanged since Slice E (bg_title painting + icon_heart corners). Decorative images retain `aria-hidden`.
+  - `src/ui/sceneView.js` — **Slice G:** bg `alt` now reads from `scene.backgroundAlt`; char `alt` from `scene.character.alt`; both remove `aria-hidden`. Choice buttons gain `aria-label="Choice N: [label text]"`.
+  - `src/ui/endingView.js` — **Slice G:** ending bg `alt` reads from `scene.backgroundAlt` (with fallback). Removed `aria-hidden` from bg.
   - `src/ui/devJumper.js` — unchanged since Slice B.
-  - `src/ui/pauseOverlay.js` — unchanged since Slice C.1.
-  - `src/ui/audioToggle.js` **(new in F)** — top-right mute button. Reflects and toggles `audio.js` state; `aria-pressed` + `aria-label` announce the action, not the state.
-  - `src/ui/progressDots.js` **(new in F)** — fixed top-centre row of 9 hollow circles (S1…S9). Listens to document-level `scene:rendered` + `state:reset` events, toggles `.is-visited` + `.is-current` per dot. Hidden on `body[data-screen="title"]`.
-  - `src/ui/contentNote.js` **(new in F)** — one-shot first-launch modal. Shows if `localStorage.getItem('content-note:seen') !== 'true'`. Dismiss via Begin button or Esc; sets the flag on dismiss. No backdrop dismiss (consent gate).
+  - `src/ui/pauseOverlay.js` — **Slice G rewrite:** 4 buttons (Resume, Mute/Unmute with live label, Credits toggle, Restart). Focus trap via Tab/Shift+Tab cycle within panel buttons. Credits panel is an inline `is-hidden` section toggled by the Credits button. `onMuteChange` subscription unsubscribed on unmount.
+  - `src/ui/audioToggle.js` **(new in F)** — top-right mute button. `aria-pressed` + `aria-label` announce the action.
+  - `src/ui/progressDots.js` **(new in F)** — fixed top-centre row of 9 hollow circles. Listens to `scene:rendered` + `state:reset`. Hidden on title.
+  - `src/ui/contentNote.js` **(new in F)** — one-shot first-launch modal with consent gate.
+
+- **Slice G CSS additions:**
+  - `styles/main.css` — desktop (≥1024px) letterbox block: body becomes flex host, `#app` gets `aspect-ratio: 16/9`, `max-width: 1600px`, `max-height: 900px`. Tablet (768–1023px) gutter tweak.
+  - `styles/scene.css` — mobile (<768px) stack block: `.scene__stage` becomes `position: relative; flex: 0 0 50%`, `.scene__char` scales to `40%`, choices `width: 100%`. Ending gets `height: 100svh`. Pause panel shrinks to full viewport width. Existing 480px block trimmed of now-redundant rules (min-height, char height, char positions, body padding). Credits panel CSS added.
 - **Docs:** `docs/TASKS.md`, `docs/INTEGRATION_LOG.md`, `docs/HANDOVER_NOTE.md` (this file).
 - **Assets (16 on disk, referenced by name in `src/story.js` or `src/ui/titleScreen.js`):**
   - **Alex:** `alex_neutral.png`, `alex_phone.png`, `alex_anxious.png`, `alex_defeated.png`
